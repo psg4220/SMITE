@@ -402,7 +402,7 @@ async def chart_command(inter: discord.Interaction, base_ticker: str, quote_tick
                 chosen_scale = ViewTrade.TimeScale.DAY_2
             case '1w' | '7d':
                 chosen_scale = ViewTrade.TimeScale.WEEK
-            case '1m':
+            case '1mnt':
                 chosen_scale = ViewTrade.TimeScale.MONTH
             case _:
                 await inter.followup.send(
