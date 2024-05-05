@@ -1,5 +1,5 @@
 import datetime
-import uuid
+import os
 
 import discord
 from discord import app_commands
@@ -21,9 +21,18 @@ intents.message_content = True
 
 bot = commands.Bot(command_prefix="/", intents=intents)
 
-
-with open("properties.json", "r") as f:
-    properties = json.load(f)
+if os.path.exists('properties.json'):
+    with open("properties.json", "r") as f:
+        properties = json.load(f)
+else:
+    with open("properties.json", "w") as f:
+        template = {
+            "TOKEN": "",
+            "SQLITE_PATH": ""
+        }
+        f.write(json.dumps(template, indent=4))
+    print("No properties.json. Please input your token and sqlite path on properties.json")
+    exit(0)
 
 @bot.event
 async def on_ready():
@@ -415,9 +424,9 @@ async def chart_command(inter: discord.Interaction, base_ticker: str, quote_tick
             return
         chart_image = discord.File(buffer, filename="chart.png")
         buffer.close()
-        bid_ask = await Currency.get_bid_ask_price(base_ticker,quote_ticker)
+        bid_ask = await Currency.get_bid_ask_price(base_ticker, quote_ticker)
         await inter.followup.send(f"> # {base_ticker.upper()}/{quote_ticker.upper()}\n"
-                                  f"> # {await Currency.last_trade_price(base_ticker,quote_ticker):,.4f} {quote_ticker.upper()}\n"
+                                  f"> # {await Currency.last_trade_price(base_ticker, quote_ticker):,.4f} {quote_ticker.upper()}\n"
                                   f"> ## 🟩 Bid: {bid_ask[0]} | 🟥 Ask: {bid_ask[1]}\n"
                                   f"> ## Spread: {abs(bid_ask[0] - bid_ask[1])}",
                                   file=chart_image)
@@ -516,5 +525,3 @@ async def mint_command(inter: discord.Interaction, amount: float):
 
 
 bot.run(properties['TOKEN'], log_handler=handler)
-
-
