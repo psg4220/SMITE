@@ -447,10 +447,10 @@ async def get_currency_name(search: str, find_by=1):
     db = await get_connection()
     try:
         async with db.cursor() as cursor:
-            if find_by == 1:
+            if find_by == InputType.ACCOUNT_ID.value:
                 column_name = 'b.account_id'
                 search = Account.to_bytes(search)
-            elif find_by == 2:
+            elif find_by == InputType.TICKER.value:
                 column_name = 'c.ticker'
                 search = search.upper()
             else:

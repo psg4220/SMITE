@@ -101,7 +101,6 @@ async def create_currency(inter: discord.Interaction, name: str, ticker: str, in
 async def address_command(inter: discord.Interaction, _type: str, _input: str):
     try:
         await inter.response.defer(ephemeral=True)
-
         if _type == 'name' or _type == 'n':
             _type = Currency.InputType.CURRENCY_NAME.value
             result = await Currency.get_account_id(inter.user.id, _input, _type)
@@ -133,6 +132,7 @@ async def address_command(inter: discord.Interaction, _type: str, _input: str):
 async def balance_command(inter: discord.Interaction, _type: str, _input: str):
     try:
         await inter.response.defer(ephemeral=True)
+        balance = None
         if _type == 'name' or _type == 'n':
             _type = Currency.InputType.CURRENCY_NAME.value
             balance = await Currency.view_balance(inter.user.id, _input, _type)
@@ -388,7 +388,7 @@ async def close_trade(inter: discord.Interaction, trade_number: str):
 @bot.tree.command(name="chart", description="Views the Chart of a market")
 async def chart_command(inter: discord.Interaction, base_ticker: str, quote_ticker: str, scale: str, limit: int):
     try:
-        await inter.response.defer(ephemeral=True)
+        await inter.response.defer(ephemeral=True)  
         match scale.lower():
             case '1s':
                 chosen_scale = ViewTrade.TimeScale.SECOND
@@ -479,7 +479,7 @@ async def mint_command(inter: discord.Interaction, amount: float):
 
 @bot.tree.command(name="burn", description="Burns money (Destroys money)")
 @app_commands.describe(amount="Amount that you want to burn")
-async def mint_command(inter: discord.Interaction, amount: float):
+async def burn_command(inter: discord.Interaction, amount: float):
     try:
         await inter.response.defer(ephemeral=True)
         if not NumberFormatter.validate_decimal_places(amount):
