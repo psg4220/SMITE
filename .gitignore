@@ -1,5 +1,6 @@
-/project/properties.json
-/project/discord.log
-/project/graph.png
-/project/test.py
+/properties.json
+/discord.log
+/graph.png
 /currency.db
+/project/test.py
+
