@@ -1,4 +1,3 @@
-import asyncio
 import enum
 import io
 import random

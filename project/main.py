@@ -455,7 +455,7 @@ async def mint_command(inter: discord.Interaction, amount: float):
         elif result == -1:
             await inter.followup.send(
                 f"> ## ⛔ Fail to mint\n"
-                f"> ### Amount should not be less than 0.0001"
+                    f"> ### Amount should not be less than 0.0001"
             )
         elif result == -2:
             await inter.followup.send(
