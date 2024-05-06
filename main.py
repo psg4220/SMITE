@@ -34,6 +34,7 @@ else:
     print("No properties.json. Please input your token and sqlite path on properties.json")
     exit(0)
 
+
 @bot.event
 async def on_ready():
     await Currency.create_tables()
@@ -388,7 +389,7 @@ async def close_trade(inter: discord.Interaction, trade_number: str):
 @bot.tree.command(name="chart", description="Views the Chart of a market")
 async def chart_command(inter: discord.Interaction, base_ticker: str, quote_ticker: str, scale: str, limit: int):
     try:
-        await inter.response.defer(ephemeral=True)  
+        await inter.response.defer(ephemeral=True)
         match scale.lower():
             case '1s':
                 chosen_scale = ViewTrade.TimeScale.SECOND
@@ -519,9 +520,11 @@ async def burn_command(inter: discord.Interaction, amount: float):
 
 
 # @bot.tree.command(name="test", description="Debug")
-# async def hello(interaction: discord.Interaction, base: int, quote: int):
-#     result = await Currency.is_reverse_pair_exists(base, quote)
-#     await interaction.response.send_message(f"{result}")
+# async def hello(interaction: discord.Interaction):
+#     await interaction.response.defer(ephemeral=True)
+#     await interaction.followup.send(
+#         f'{interaction.user.id}\n{user.id}'
+#     )
 
 
 bot.run(properties['TOKEN'], log_handler=handler)
