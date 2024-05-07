@@ -426,10 +426,13 @@ async def chart_command(inter: discord.Interaction, base_ticker: str, quote_tick
         chart_image = discord.File(buffer, filename="chart.png")
         buffer.close()
         bid_ask = await Currency.get_bid_ask_price(base_ticker, quote_ticker)
+        spread = 0
+        if bid_ask[0] is not None and bid_ask[1] is not None:
+            spread = abs(bid_ask[0] - bid_ask[1])
         await inter.followup.send(f"> # {base_ticker.upper()}/{quote_ticker.upper()}\n"
                                   f"> # {await Currency.last_trade_price(base_ticker, quote_ticker):,.4f} {quote_ticker.upper()}\n"
                                   f"> ## 🟩 Bid: {bid_ask[0]} | 🟥 Ask: {bid_ask[1]}\n"
-                                  f"> ## Spread: {abs(bid_ask[0] - bid_ask[1])}",
+                                  f"> ## Spread: {abs(spread)}",
                                   file=chart_image)
 
     except Exception as e:
