@@ -116,7 +116,7 @@ async def plot_trade_logs(db_path, base_ticker, quote_ticker, scale: TimeScale, 
         if len(data) == 0:
             return None
         for row in data:
-            trade_date = datetime.datetime.fromtimestamp(row[1])
+            trade_date = datetime.datetime.fromtimestamp(row[1], tz=datetime.UTC)
             price = row[0]
             trade_dates.append(trade_date)
             prices.append(price)

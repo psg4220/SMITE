@@ -31,7 +31,7 @@ else:
             "SQLITE_PATH": ""
         }
         f.write(json.dumps(template, indent=4))
-    print("No properties.json. Please input your token and sqlite path on properties.json")
+    print("No properties.json. Created one.")
     exit(0)
 
 
@@ -91,67 +91,56 @@ async def create_currency(inter: discord.Interaction, name: str, ticker: str, in
                 "> ⚠️ And make sure that the currency name does not already exist"
             )
     except Exception as e:
-        await inter.followup.send("Something went wrong")
+        await inter.followup.send(f"Something went wrong:\n{e}")
         raise e
 
 
 @bot.tree.command(name="address",
                   description="Shows your receiver address")
-@app_commands.describe(_type='Type "name" to search by the currency name or "ticker" to search by ticker ex. (USD)',
-                       _input='The search input')
-async def address_command(inter: discord.Interaction, _type: str, _input: str):
+@app_commands.describe(_input='What currency you want to input (add $ if it is a ticker ex. $USD')
+async def address_command(inter: discord.Interaction, _input: str):
     try:
         await inter.response.defer(ephemeral=True)
-        if _type == 'name' or _type == 'n':
-            _type = Currency.InputType.CURRENCY_NAME.value
-            result = await Currency.get_account_id(inter.user.id, _input, _type)
-        elif _type == 'ticker' or _type == 't':
-            _type = Currency.InputType.TICKER.value
-            result = await Currency.get_account_id(inter.user.id, _input, _type)
-            _input = await Currency.get_currency_name(_input, _type)
+        if _input.startswith("$"):
+            ticker = _input[1:]
+            result = await Currency.get_account_id(inter.user.id, ticker, Currency.InputType.TICKER.value)
         else:
-            await inter.followup.send(
-                f"> ## ⛔ Invalid type ⛔\n"
-                "> **Must be either 'name' or 'ticker' in _type**"
-            )
-            return
+            result = await Currency.get_account_id(inter.user.id, _input, Currency.InputType.CURRENCY_NAME.value)
         if result is None:
             await inter.followup.send(
                 f"> ## ⛔ Currency doesn't exist ⛔\n"
             )
             return
         await inter.followup.send(
-            f"> ## Your {_input} address is:\n"
+            f"> ## Your {ticker} address is:\n"
             f"> || **{result}** ||"
         )
     except Exception as e:
-        await inter.followup.send("Something went wrong")
+        await inter.followup.send(f"Something went wrong:\n{e}")
         raise e
 
 
 @bot.tree.command(name="balance", description="Displays the balance of your specified currency.")
-async def balance_command(inter: discord.Interaction, _type: str, _input: str):
+@app_commands.describe(_input="What currency you want to input (add $ if it is a ticker ex. $USD)")
+async def balance_command(inter: discord.Interaction, _input: str):
     try:
         await inter.response.defer(ephemeral=True)
-        balance = None
-        if _type == 'name' or _type == 'n':
-            _type = Currency.InputType.CURRENCY_NAME.value
-            balance = await Currency.view_balance(inter.user.id, _input, _type)
-        elif _type == 'ticker' or _type == 't':
-            _type = Currency.InputType.TICKER.value
-            balance = await Currency.view_balance(inter.user.id, _input, _type)
-            _input = await Currency.get_currency_name(_input, _type)
+        if _input.startswith('$'):
+            ticker = _input[1:]
+            balance = await Currency.view_balance(inter.user.id, ticker, Currency.InputType.TICKER.value)
+        else:
+            balance = await Currency.view_balance(inter.user.id, _input, Currency.InputType.CURRENCY_NAME.value)
         if balance is None:
             await inter.followup.send(
                 "> ## ⛔ Name doesn't exist ⛔\n"
             )
             return
         await inter.followup.send(
-            f"> ## Your {_input} Balance:\n"
+            f"> ## Your {ticker} Balance:\n"
             f"> # {balance:,.4f}"
         )
     except Exception as e:
-        await inter.followup.send("Something went wrong")
+        await inter.followup.send(f"Something went wrong:\n{e}")
         raise e
 
 
@@ -176,6 +165,12 @@ async def transfer(inter: discord.Interaction, receiver_address: str, amount: fl
 
         currency_name = await Currency.get_currency_name(receiver_address, Currency.InputType.ACCOUNT_ID.value)
         currency_ticker = await Currency.get_currency_ticker(receiver_address, Currency.InputType.ACCOUNT_ID.value)
+        if currency_name is None or currency_ticker is None:
+            await inter.followup.send(
+                "> ## ⛔ TRANSFER FAILED ⛔\n"
+                "> ⚠️ **Your address in this currency doesn't exist**",
+            )
+            return
         await inter.followup.send(
             f"> ## ⚠️You are about to transfer ***{amount:,.4f}*** amount of ***{currency_name}({currency_ticker})***\n"
             f"> ## to this given receiver address ({receiver_address})\n"
@@ -183,7 +178,7 @@ async def transfer(inter: discord.Interaction, receiver_address: str, amount: fl
             view=ConfirmTransfer(inter.user.id, receiver_address, amount)
         )
     except Exception as e:
-        await inter.followup.send("Something went wrong")
+        await inter.followup.send(f"Something went wrong:\n{e}")
         raise e
 
 
@@ -215,7 +210,6 @@ class ConfirmTransfer(discord.ui.View):
                 "> ## ⛔ TRANSFER FAILED ⛔\n"
                 f"> ⚠️ **Amount ({self.amount}) cannot be less than or equal to zero**"
             )
-
         elif result == -2:
             await interaction.followup.send(
                 "> ## ⛔ TRANSFER FAILED ⛔\n"
@@ -249,15 +243,19 @@ class ConfirmTransfer(discord.ui.View):
 @app_commands.describe(
     address="The address"
 )
-async def info_command(inter: discord.Interaction, address: str):
+async def address_info_command(inter: discord.Interaction, address: str):
     try:
         await inter.response.defer(ephemeral=True)
         is_central = await Currency.is_central(address)
         currency_name = await Currency.get_currency_name(address, Currency.InputType.ACCOUNT_ID.value)
         currency_ticker = await Currency.get_currency_ticker(address, Currency.InputType.ACCOUNT_ID.value)
+        if currency_name is None or currency_ticker is None:
+            await inter.followup.send(
+                f"> ### Currency does not exist."
+            )
         if is_central:
             await inter.followup.send(
-                f"> ### 🏦This is the MAIN address of the currency\n"
+                f"> ### 🏦 This is the MAIN address of the currency\n"
                 f"> ### {currency_name} ({currency_ticker})"
             )
             return
@@ -265,7 +263,58 @@ async def info_command(inter: discord.Interaction, address: str):
             f"> ### {currency_name} ({currency_ticker})"
         )
     except Exception as e:
-        await inter.followup.send("Something went wrong")
+        await inter.followup.send("Something went wrong:\n", e)
+        raise e
+
+
+@bot.tree.command(name="info", description="Views the info of a currency.")
+@app_commands.describe(
+    _input="What currency you want to input (add $ if it is a ticker ex. $USD)"
+)
+async def info_command(inter: discord.Interaction, _input: str):
+    try:
+        await inter.response.defer(ephemeral=True)
+        if _input.startswith("$"):
+            ticker = _input[1:]
+            currency_id = await Currency.get_currency_id(ticker, Currency.InputType.TICKER.value)
+            name = await Currency.get_currency_name(ticker, Currency.InputType.TICKER.value)
+        else:
+            currency_id = await Currency.get_currency_id(_input, Currency.InputType.CURRENCY_NAME.value)
+            ticker = await Currency.get_currency_ticker(_input, Currency.InputType.CURRENCY_NAME.value)
+            name = _input
+
+        if currency_id is None:
+            await inter.followup.send(
+                f"> ### Currency does not exist."
+            )
+            return
+
+        max_supply = await Currency.get_maximum_supply(currency_id)
+        reserve_supply = await Currency.get_reserve_supply(currency_id)
+
+        if max_supply is None or reserve_supply is None:
+            await inter.followup.send(
+                f"> `Max and reserve supply doesn't exist (which is impossible).`\n"
+                f"> `Report this in the SMITE discord server.`"
+            )
+            return
+
+        circulation_supply = max_supply - reserve_supply
+        date_creation_unix = await Currency.get_central_date_creation(currency_id)
+        date_creation = datetime.datetime.fromtimestamp(date_creation_unix, tz=datetime.UTC)\
+            .strftime("%b%e, %Y%l:%M:%S %p")
+        await inter.followup.send(
+            f"`Currency Information`\n\n"
+            f"`Currency Name: {name}`\n"
+            f"`Ticker Symbol: {ticker}`\n"
+            f"`Maximum Supply: {max_supply:,.4f}`\n"
+            f"`Reserve Supply: {reserve_supply:,.4f}`\n"
+            f"`In Circulation: {circulation_supply:,.4f}`\n"
+            f"`Date Created: {date_creation}`"
+        )
+
+    except Exception as e:
+        await inter.followup.send(f"Something went wrong:\n{e}")
         raise e
 
 
@@ -291,7 +340,7 @@ async def receipt_command(inter: discord.Interaction, transaction_uuid: str):
             f"> `Transaction Date: {datetime.datetime.fromtimestamp(result[5], tz=datetime.UTC)}`"
         )
     except Exception as e:
-        await inter.followup.send("Something went wrong")
+        await inter.followup.send(f"Something went wrong:\n{e}")
         raise e
 
 
@@ -338,16 +387,15 @@ async def trade_command(inter: discord.Interaction,
             return
         if result == -2:
             await inter.followup.send(
-                f"> ## ❌Trade failed\n"
-                f"> ### Reverse tickers are not supported yet.\n"
-                f"> ### Please use {quote_ticker} as base and {base_ticker} as quote\n"
-
+                f"> ## ⛔ Trade failed\n"
+                f"> ### Base or Quote ticker does not exist\n"
             )
             return
         if result[0] == 1:
             await inter.followup.send(
                 f"> ## ✅{'Buy' if result[2] else 'Sell'} Order listed\n"
-                f"> `Trade Number: {result[1]}`"
+                f"> ⚠️ Copy this: `Trade Number: {result[1]}`\n"
+                f"> `Note: If list takes too long to fulfill, consider adjusting the price and or amount.`"
             )
         elif result[0] == 0:
             await inter.followup.send(
@@ -359,30 +407,32 @@ async def trade_command(inter: discord.Interaction,
                     f"> ## 💱✅Your Trade (№ {result[2]}) has been fulfilled."
                 )
     except Exception as e:
-        await inter.followup.send("Something went wrong")
+        await inter.followup.send(f"Something went wrong:\n{e}")
         raise e
 
 
 @bot.tree.command(name="trade_cancel", description="Closes a trade")
 @app_commands.describe(trade_number="The trade number when you list a trade")
-async def close_trade(inter: discord.Interaction, trade_number: str):
+async def close_trade(inter: discord.Interaction, trade_number: int):
     try:
         await inter.response.defer(ephemeral=True)
-        result = await Currency.cancel_trade(inter.user.id, int(trade_number))
+        result = await Currency.cancel_trade(inter.user.id, trade_number)
         if result == 0:
             await inter.followup.send(
-                f"> ## Trade Order Closed"
+                f"> ## 📪 Trade Order Closed"
             )
-        else:
+        elif result == -1:
             await inter.followup.send(
-                f"> ## Fail to Close trade\n"
-                f"> ### Reasons:\n"
-                f"> ### The Trade is not yours\n"
-                f"> ### Maybe the trade was fulfilled already\n"
-                f"> ### The trade didn't exist"
+                f"> ## ⛔ Fail to Close trade\n"
+                f"> ### ⚠️ Trade doesn't exist!\n"
+            )
+        elif result == -2:
+            await inter.followup.send(
+                f"> ## ⛔ Fail to Close trade\n"
+                f"> ### ⚠️ Trade is not yours!\n"
             )
     except Exception as e:
-        await inter.followup.send("Something went wrong")
+        await inter.followup.send(f"Something went wrong:\n{e}")
         raise e
 
 
@@ -407,7 +457,7 @@ async def chart_command(inter: discord.Interaction, base_ticker: str, quote_tick
                 chosen_scale = ViewTrade.TimeScale.MONTH
             case _:
                 await inter.followup.send(
-                    "> ### Invalid scale input"
+                    "> ### ⛔ Invalid scale input"
                 )
                 return
 
@@ -436,7 +486,7 @@ async def chart_command(inter: discord.Interaction, base_ticker: str, quote_tick
                                   file=chart_image)
 
     except Exception as e:
-        await inter.followup.send("Something went wrong")
+        await inter.followup.send(f"Something went wrong:\n{e}")
         raise e
 
 
@@ -458,7 +508,7 @@ async def mint_command(inter: discord.Interaction, amount: float):
         elif result == -1:
             await inter.followup.send(
                 f"> ## ⛔ Fail to mint\n"
-                    f"> ### Amount should not be less than 0.0001"
+                f"> ### Amount should not be less than 0.0001"
             )
         elif result == -2:
             await inter.followup.send(
@@ -477,7 +527,7 @@ async def mint_command(inter: discord.Interaction, amount: float):
             )
 
     except Exception as e:
-        inter.followup.send("Something went wrong")
+        await inter.followup.send(f"Something went wrong:\n{e}")
         raise e
 
 
@@ -509,7 +559,7 @@ async def burn_command(inter: discord.Interaction, amount: float):
         elif result == -3:
             await inter.followup.send(
                 f"> ## ⛔ Fail to burn\n"
-                f"> ### Balance is less than 0.0001"
+                f"> ### Exceeded the balance"
             )
         # elif result == -4:
         #     await inter.followup.send(
@@ -518,7 +568,7 @@ async def burn_command(inter: discord.Interaction, amount: float):
         #     )
 
     except Exception as e:
-        inter.followup.send("Something went wrong")
+        await inter.followup.send(f"Something went wrong:\n{e}")
         raise e
 
 

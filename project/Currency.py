@@ -574,7 +574,6 @@ async def create_address(discord_id: int, search: str, find_by=0):
             await db.commit()
             return acn_bytes
     except Exception as e:
-        await db.close()
         raise e
     finally:
         await db.close()
@@ -690,6 +689,80 @@ async def get_balance_id(discord_id: int, currency_id: int):
         await db.close()
 
 
+async def get_central_account(currency_id: int):
+    db = await get_connection()
+    try:
+        async with db.cursor() as cursor:
+            await cursor.execute(
+                '''
+                SELECT
+                    *
+                FROM
+                    transactions AS t
+                INNER JOIN
+                    balance AS b
+                ON
+                    b.id = t.balance_sender_id
+                    AND b.id = t.balance_receiver_id
+                WHERE
+                    currency_id = ?
+                ORDER BY
+                    t.transaction_date ASC
+                LIMIT 1
+                ''',
+                (currency_id,)
+            )
+            row = await cursor.fetchone()
+            if row is None:
+                return None
+            return row
+    except Exception as e:
+        raise e
+    finally:
+        await db.close()
+
+
+async def get_reserve_supply(currency_id: int):
+    try:
+        row = await get_central_account(currency_id)
+        return row[9]
+    except Exception as e:
+        raise e
+
+
+async def get_central_date_creation(currency_id: int):
+    try:
+        row = await get_central_account(currency_id)
+        return row[4]
+    except Exception as e:
+        raise e
+
+
+async def get_maximum_supply(currency_id: int):
+    db = await get_connection()
+    try:
+        async with db.cursor() as cursor:
+            await cursor.execute(
+                '''
+                SELECT
+                    SUM(balance)
+                FROM
+                    balance
+                WHERE
+                    currency_id = ?
+                ''',
+                (currency_id,)
+            )
+            max_supply = await cursor.fetchone()
+            if max_supply is None:
+                return None
+            return max_supply[0]
+    except Exception as e:
+        raise e
+    finally:
+        await db.close()
+
+
 async def trade(discord_id, user_trade: Trade):
     db = await get_connection()
     is_buy = user_trade.trade_type == Trading.TradeType.BUY
@@ -714,6 +787,10 @@ async def trade(discord_id, user_trade: Trade):
                 seller_balance = await view_balance(discord_id, user_trade.base_ticker, InputType.TICKER.value)
                 if seller_balance is None or seller_balance < user_trade.amount:
                     return -1
+
+            # If base or quote currency is none then return an error:
+            if base_currency_id is None or quote_currency_id is None:
+                return -2
 
             # Searches for active_trades greater than equal the amount
             await cursor.execute(
@@ -813,9 +890,9 @@ async def trade(discord_id, user_trade: Trade):
                             int(selected_trade[0])
                         )
                     )
-                # Now it updates the balance
+                # This updates the balance
                 # P.S. This has now become a clusterfuck. I think there is alternative to this, but
-                # I will let it for now
+                # I will let it for now, (band aid solution)
                 if is_buy:
                     await edit_balance_on_connection(
                         cursor,
@@ -867,7 +944,6 @@ async def trade(discord_id, user_trade: Trade):
                 return 0, selected_trade[1], selected_trade[0], is_fulfilled
     except Exception as e:
         await db.rollback()
-        await db.close()
         raise e
     finally:
         await db.close()
@@ -886,8 +962,10 @@ async def cancel_trade(discord_id: int, trade_id: int):
                 )
             )
             selected_trade = await cursor.fetchone()
-            if not selected_trade[1] == discord_id or selected_trade is None:
+            if selected_trade is None:
                 return -1
+            if not selected_trade[1] == discord_id:
+                return -2
             base_currency_id = selected_trade[3]
             quote_currency_id = selected_trade[4]
             price = selected_trade[5]
@@ -1045,6 +1123,8 @@ async def last_trade_price(base_ticker, quote_ticker):
             return price[0]
     except Exception as e:
         raise e
+    finally:
+        await db.close()
 
 
 async def get_bid_ask_price(base_ticker, quote_ticker):
@@ -1088,6 +1168,8 @@ async def get_bid_ask_price(base_ticker, quote_ticker):
             return bid_price, ask_price
     except Exception as e:
         raise e
+    finally:
+        await db.close()
 
 
 async def mint_currency(discord_id: int, amount: float, is_subtract=False):
@@ -1123,7 +1205,7 @@ async def mint_currency(discord_id: int, amount: float, is_subtract=False):
                 return -2
             if is_subtract:
                 new_balance = row[1] - amount
-                if new_balance < 0.0001:
+                if new_balance < 0:
                     return -3
             else:
                 new_balance = row[1] + amount
@@ -1149,4 +1231,3 @@ async def mint_currency(discord_id: int, amount: float, is_subtract=False):
         raise e
     finally:
         await db.close()
-
