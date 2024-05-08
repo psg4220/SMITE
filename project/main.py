@@ -16,7 +16,7 @@ from Trading import Trade
 
 handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
 
-intents = discord.Intents.default()
+intents = discord.Intents.all()
 intents.message_content = True
 
 bot = commands.Bot(command_prefix="/", intents=intents)
