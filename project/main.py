@@ -136,7 +136,7 @@ async def balance_command(inter: discord.Interaction, _input: str):
             )
             return
         await inter.followup.send(
-            f"> ## Your {ticker} Balance:\n"
+            f"> ## Your {ticker.upper()} Balance:\n"
             f"> # {balance:,.4f}"
         )
     except Exception as e:
@@ -306,7 +306,7 @@ async def info_command(inter: discord.Interaction, _input: str):
         await inter.followup.send(
             f"`Currency Information`\n\n"
             f"`Currency Name: {name}`\n"
-            f"`Ticker Symbol: {ticker}`\n"
+            f"`Ticker Symbol: {ticker.upper()}`\n"
             f"`Maximum Supply: {max_supply:,.4f}`\n"
             f"`Reserve Supply: {reserve_supply:,.4f}`\n"
             f"`In Circulation: {circulation_supply:,.4f}`\n"
