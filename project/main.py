@@ -15,6 +15,7 @@ import ViewTrade
 from Trading import Trade
 from Boat import Economy
 import WireTransfer
+
 handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
 
 intents = discord.Intents.default()
@@ -159,6 +160,38 @@ async def unset_guild_command(inter: discord.Interaction):
             await inter.followup.send(
                 '> ### You do not have permission to use this command'
             )
+    except Exception as e:
+        await inter.followup.send(e)
+
+
+@bot.tree.command(name="set_auth_provider", description="Sets the guild authentication token for the provider")
+@app_commands.choices(
+    provider=[
+        app_commands.Choice(name="UnbelievaBoat", value=WireTransfer.Provider.UNBELIEVABOAT.value),
+    ]
+)
+async def set_auth_command(inter: discord.Interaction, provider: app_commands.Choice[int], auth: str):
+    try:
+        await inter.response.defer(ephemeral=True)
+        match provider.value:
+            case WireTransfer.Provider.UNBELIEVABOAT.value:
+                result = await Currency.create_provider_auth(inter.user.id,
+                                                             inter.guild_id,
+                                                             WireTransfer.Provider(provider.value),
+                                                             auth)
+
+                if result == -1:
+                    await Currency.set_provider_auth(inter.user.id,
+                                                     inter.guild_id,
+                                                     WireTransfer.Provider(provider.value),
+                                                     auth)
+                elif result == -2:
+                    await inter.followup.send(
+                        '> ### You do not have permission to use this command or you havent created a currency yet'
+                    )
+                await inter.followup.send("> ### Auth provider added")
+            case _:
+                return
     except Exception as e:
         await inter.followup.send(e)
 
@@ -707,7 +740,7 @@ async def burn_command(inter: discord.Interaction, amount: float):
 @bot.tree.command(name="wire_transfer", description="Transfer funds to using other bots.")
 @app_commands.choices(
     provider=[
-        app_commands.Choice(name="UnbelievaBoat", value=0),
+        app_commands.Choice(name="UnbelievaBoat", value=WireTransfer.Provider.UNBELIEVABOAT.value),
     ]
 )
 @app_commands.choices(
@@ -728,7 +761,7 @@ async def wire_transfer_command(inter: discord.Interaction,
             )
             return
         match provider.value:
-            case 0:
+            case WireTransfer.Provider.UNBELIEVABOAT.value:
                 result = await boat_transfer(inter.user.id, inter.guild_id, action.value, amount)
                 if result == 0:
                     await inter.followup.send(
@@ -742,6 +775,10 @@ async def wire_transfer_command(inter: discord.Interaction,
                     await inter.followup.send(
                         "> ### Provider's currency does not exist"
                     )
+                elif result == -3:
+                    await inter.followup.send(
+                        "> ### Provider's auth not set"
+                    )
             case _:
                 await inter.followup.send(
                     "> ### Provider not supported"
@@ -752,7 +789,10 @@ async def wire_transfer_command(inter: discord.Interaction,
 
 async def boat_transfer(discord_id: int, guild_id: int, action, amount):
     try:
-        economy = Economy(discord_id, guild_id)
+        auth = await Currency.get_provider_auth(guild_id, WireTransfer.Provider.UNBELIEVABOAT)
+        if auth is None:
+            return -3
+        economy = Economy(discord_id, guild_id, auth)
         boat = WireTransfer.BoatTransfer(economy)
         return await boat.transfer(amount, WireTransfer.Action(action))
     except Exception as e:

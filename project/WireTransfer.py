@@ -4,9 +4,14 @@ import json
 import Boat
 import Currency
 
+
 class Action(enum.Enum):
     WITHDRAW = 0
     DEPOSIT = 1
+
+
+class Provider(enum.Enum):
+    UNBELIEVABOAT = 0
 
 
 class BoatTransfer:

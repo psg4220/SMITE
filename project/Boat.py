@@ -2,33 +2,16 @@ import os
 import json
 
 import requests
-
-
-def get_auth():
-    if os.path.exists('properties.json'):
-        with open("properties.json", "r") as f:
-            properties = json.load(f)
-            return properties["BOAT_AUTH"]
-    else:
-        raise FileNotFoundError("properties.json doesn't exist")
-
-
-def get_guild(guild_id: int):
-    url = f"https://unbelievaboat.com/api/v1/guilds/{guild_id}"
-    headers = {
-        "accept": "application/json",
-        "Authorization": get_auth()
-    }
-    response = requests.get(url, headers=headers)
-    return response.json()
+import Currency
+import WireTransfer
 
 
 class Economy:
 
-    def __init__(self, user_id: int, guild_id: int):
+    def __init__(self, user_id: int, guild_id: int, auth: str):
         self.user_id = user_id
         self.guild_id = guild_id
-        self.auth = get_auth()
+        self.auth = auth
 
     def get_balance(self):
         url = f'https://unbelievaboat.com/api/v1/guilds/{self.guild_id}/users/{self.user_id}'

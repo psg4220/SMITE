@@ -7,6 +7,7 @@ import aiofiles
 
 import Account
 import Trading
+import WireTransfer
 from Account import AccountNumber
 from Trading import Trade
 
@@ -160,6 +161,16 @@ async def create_tables():
                 currencies AS quote_currency ON at.quote_currency_id = quote_currency.id;
             '''
         )
+        await cursor.execute(
+            '''
+            CREATE TABLE IF NOT EXISTS provider_auth(
+                id INTEGER PRIMARY KEY,
+                guild_id INTEGER NOT NULL,
+                provider_id INTEGER NOT NULL,
+                auth_token TEXT
+            )
+            '''
+        )
     except Exception as e:
         raise e
     finally:
@@ -217,6 +228,7 @@ async def create_currency(discord_id: int, name: str, ticker: str, initial_balan
         raise e
     finally:
         await db.close()
+
 
 async def set_currency_guild_id(discord_id: int, guild_id: int):
     db = await get_connection()
@@ -1367,6 +1379,128 @@ async def mint_currency(discord_id: int, amount: float, is_subtract=False):
             )
             await db.commit()
             return 0
+    except Exception as e:
+        await db.close()
+        raise e
+    finally:
+        await db.close()
+
+
+async def create_provider_auth(discord_id: int, guild_id: int, provider: WireTransfer.Provider, auth_token: str):
+    db = await get_connection()
+    try:
+        async with db.cursor() as cursor:
+            await cursor.execute(
+                '''
+                SELECT
+                    COUNT(*)
+                FROM
+                    provider_auth
+                WHERE
+                    guild_id = ?
+                    AND provider_id = ?
+                ''',
+                (guild_id, provider.value)
+            )
+            count = await cursor.fetchone()
+            if count[0] > 0:
+                return -1
+            central_account = await get_central_account(discord_id, is_discord_id=True)
+            if central_account is None:
+                return -2
+            if discord_id != central_account[7]:
+                return -2
+            await cursor.execute(
+                '''
+                INSERT INTO provider_auth(provider_id, guild_id, auth_token) VALUES (?,?,?)
+                ''',
+                (provider.value, guild_id, auth_token)
+            )
+            await db.commit()
+    except Exception as e:
+        await db.close()
+        raise e
+    finally:
+        await db.close()
+
+
+async def set_provider_auth(discord_id: int, guild_id: int, provider: WireTransfer.Provider, auth_token: str):
+    db = await get_connection()
+    try:
+        async with db.cursor() as cursor:
+            central_account = await get_central_account(discord_id, is_discord_id=True)
+            if central_account is None:
+                return -1
+            if discord_id != central_account[7]:
+                return -1
+            await cursor.execute(
+                '''
+                UPDATE
+                provider_auth
+                SET
+                auth_token = ?
+                WHERE
+                guild_id = ?
+                AND provider_id = ?
+                ''',
+                (
+                    auth_token,
+                    guild_id,
+                    provider.value
+                )
+            )
+            await db.commit()
+    except Exception as e:
+        await db.close()
+        raise e
+    finally:
+        await db.close()
+
+
+async def delete_provider_auth(guild_id: int, provider: WireTransfer.Provider):
+    db = await get_connection()
+    try:
+        async with db.cursor() as cursor:
+            await cursor.execute(
+                '''
+                DELETE FROM provider_auth WHERE guild_id = ? AND provider_id = ?
+                ''',
+                (
+                    guild_id,
+                    provider.value
+                )
+            )
+            await db.commit()
+    except Exception as e:
+        await db.close()
+        raise e
+    finally:
+        await db.close()
+
+
+async def get_provider_auth(guild_id: int, provider: WireTransfer.Provider):
+    db = await get_connection()
+    try:
+        async with db.cursor() as cursor:
+            await cursor.execute(
+                '''
+                SELECT
+                    auth_token
+                FROM
+                    provider_auth
+                WHERE
+                    guild_id = ?
+                    AND provider_id = ?
+                ''',
+                (
+                    guild_id,
+                    provider.value
+                )
+            )
+            auth_token = await cursor.fetchone()
+            if auth_token is None:
+                return None
+            return auth_token[0]
     except Exception as e:
         await db.close()
         raise e
