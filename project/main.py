@@ -13,13 +13,12 @@ import NumberFormatter
 import Trading
 import ViewTrade
 from Trading import Trade
-
+from Boat import Economy
+from project import WireTransfer
 handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
 
-intents = discord.Intents.all()
-intents.message_content = True
-
-bot = commands.Bot(command_prefix="/", intents=intents)
+intents = discord.Intents.default()
+bot = commands.Bot(command_prefix="!", intents=intents)
 
 if os.path.exists('properties.json'):
     with open("properties.json", "r") as f:
@@ -33,6 +32,12 @@ else:
         f.write(json.dumps(template, indent=4))
     print("No properties.json. Created one.")
     exit(0)
+
+
+def is_dm(inter: discord.Interaction):
+    if inter.guild is None:
+        return True
+    return False
 
 
 @bot.event
@@ -54,6 +59,11 @@ async def on_ready():
 async def create_currency(inter: discord.Interaction, name: str, ticker: str, initial_supply: float):
     try:
         await inter.response.defer(ephemeral=True)
+        # if not is_dm(inter):
+        #     await inter.followup.send(
+        #         "** You cannot use this bot in a server, DM me instead. **"
+        #     )
+        #     return
         if not NumberFormatter.validate_decimal_places(initial_supply):
             await inter.followup.send(
                 f'> ## ⛔ Failed to create a currency\n'
@@ -95,16 +105,80 @@ async def create_currency(inter: discord.Interaction, name: str, ticker: str, in
         raise e
 
 
+@bot.tree.command(name="set_guild", description="Sets the guild id to your currency")
+async def set_guild_command(inter: discord.Interaction):
+    try:
+        await inter.response.defer(ephemeral=True)
+        # if is_dm(inter):
+        #     await inter.followup.send(
+        #         "> ### You cannot use this bot in a DM. \n"
+        #         "> Please run this command on the server you want to set it."
+        #     )
+        #     return
+        result = await Currency.set_currency_guild_id(inter.user.id, inter.guild_id)
+        if result == 0:
+            await inter.followup.send(
+                '> ### Your currency guild has been set'
+            )
+        elif result == -1:
+            await inter.followup.send(
+                "> ### Your currency is already set to a guild."
+            )
+        elif result == -2:
+            await inter.followup.send(
+                "> ### You haven't created your currency yet."
+            )
+        elif result == -3:
+            await inter.followup.send(
+                '> ### You do not have permission to use this command'
+            )
+    except Exception as e:
+        await inter.followup.send(e)
+
+
+@bot.tree.command(name="unset_guild", description="Sets the guild id to your currency")
+async def unset_guild_command(inter: discord.Interaction):
+    try:
+        await inter.response.defer(ephemeral=True)
+        # if is_dm(inter):
+        #     await inter.followup.send(
+        #         "> ### You cannot use this bot in a DM. \n"
+        #         "> Please run this command on the server you want to set it."
+        #     )
+        #     return
+        result = await Currency.unset_currency_guild_id(inter.user.id)
+        if result == 0:
+            await inter.followup.send(
+                '> ### Your currency guild has been unset'
+            )
+        elif result == -1:
+            await inter.followup.send(
+                "> ### You haven't created your currency yet."
+            )
+        elif result == -2:
+            await inter.followup.send(
+                '> ### You do not have permission to use this command'
+            )
+    except Exception as e:
+        await inter.followup.send(e)
+
+
 @bot.tree.command(name="address",
                   description="Shows your receiver address")
 @app_commands.describe(_input='What currency you want to input (add $ if it is a ticker ex. $USD')
 async def address_command(inter: discord.Interaction, _input: str):
     try:
         await inter.response.defer(ephemeral=True)
+        # if not is_dm(inter):
+        #     await inter.followup.send(
+        #         "** You cannot use this bot in a server, DM me instead. **"
+        #     )
+        #     return
         if _input.startswith("$"):
             ticker = _input[1:]
             result = await Currency.get_account_id(inter.user.id, ticker, Currency.InputType.TICKER.value)
         else:
+            ticker = await Currency.get_currency_ticker(_input, Currency.InputType.CURRENCY_NAME.value)
             result = await Currency.get_account_id(inter.user.id, _input, Currency.InputType.CURRENCY_NAME.value)
         if result is None:
             await inter.followup.send(
@@ -112,7 +186,7 @@ async def address_command(inter: discord.Interaction, _input: str):
             )
             return
         await inter.followup.send(
-            f"> ## Your {ticker} address is:\n"
+            f"> ## Your {ticker.upper()} address is:\n"
             f"> || **{result}** ||"
         )
     except Exception as e:
@@ -125,11 +199,17 @@ async def address_command(inter: discord.Interaction, _input: str):
 async def balance_command(inter: discord.Interaction, _input: str):
     try:
         await inter.response.defer(ephemeral=True)
+        # if not is_dm(inter):
+        #     await inter.followup.send(
+        #         "** You cannot use this bot in a server, DM me instead. **"
+        #     )
+        #     return
         if _input.startswith('$'):
             ticker = _input[1:]
             balance = await Currency.view_balance(inter.user.id, ticker, Currency.InputType.TICKER.value)
         else:
             balance = await Currency.view_balance(inter.user.id, _input, Currency.InputType.CURRENCY_NAME.value)
+            ticker = await Currency.get_currency_ticker(_input, Currency.InputType.CURRENCY_NAME.value)
         if balance is None:
             await inter.followup.send(
                 "> ## ⛔ Name doesn't exist ⛔\n"
@@ -152,7 +232,11 @@ async def balance_command(inter: discord.Interaction, _input: str):
 async def transfer(inter: discord.Interaction, receiver_address: str, amount: float):
     try:
         await inter.response.defer(ephemeral=True)
-
+        # if not is_dm(inter):
+        #     await inter.followup.send(
+        #         "** You cannot use this bot in a server, DM me instead. **"
+        #     )
+        #     return
         if not NumberFormatter.validate_decimal_places(amount):
             await inter.followup.send(
                 "> ## ⚠️ Maximum number of decimal places is reached (4 max)"
@@ -173,7 +257,8 @@ async def transfer(inter: discord.Interaction, receiver_address: str, amount: fl
             return
         await inter.followup.send(
             f"> ## ⚠️You are about to transfer ***{amount:,.4f}*** amount of ***{currency_name}({currency_ticker})***\n"
-            f"> ## to this given receiver address ({receiver_address})\n"
+            f"> ## to this given receiver address\n"
+            f"> ## ({receiver_address})\n"
             "> ### Click confirm to transfer",
             view=ConfirmTransfer(inter.user.id, receiver_address, amount)
         )
@@ -246,6 +331,11 @@ class ConfirmTransfer(discord.ui.View):
 async def address_info_command(inter: discord.Interaction, address: str):
     try:
         await inter.response.defer(ephemeral=True)
+        # if not is_dm(inter):
+        #     await inter.followup.send(
+        #         "** You cannot use this bot in a server, DM me instead. **"
+        #     )
+        #     return
         is_central = await Currency.is_central(address)
         currency_name = await Currency.get_currency_name(address, Currency.InputType.ACCOUNT_ID.value)
         currency_ticker = await Currency.get_currency_ticker(address, Currency.InputType.ACCOUNT_ID.value)
@@ -274,6 +364,11 @@ async def address_info_command(inter: discord.Interaction, address: str):
 async def info_command(inter: discord.Interaction, _input: str):
     try:
         await inter.response.defer(ephemeral=True)
+        # if not is_dm(inter):
+        #     await inter.followup.send(
+        #         "** You cannot use this bot in a server, DM me instead. **"
+        #     )
+        #     return
         if _input.startswith("$"):
             ticker = _input[1:]
             currency_id = await Currency.get_currency_id(ticker, Currency.InputType.TICKER.value)
@@ -298,10 +393,10 @@ async def info_command(inter: discord.Interaction, _input: str):
                 f"> `Report this in the SMITE discord server.`"
             )
             return
-
-        circulation_supply = max_supply - reserve_supply
+        trade_supply = await Currency.get_active_trades_supply(currency_id)
+        circulation_supply = (max_supply - reserve_supply)
         date_creation_unix = await Currency.get_central_date_creation(currency_id)
-        date_creation = datetime.datetime.fromtimestamp(date_creation_unix, tz=datetime.UTC)\
+        date_creation = datetime.datetime.fromtimestamp(date_creation_unix, tz=datetime.UTC) \
             .strftime("%b%e, %Y%l:%M:%S %p")
         await inter.followup.send(
             f"`Currency Information`\n\n"
@@ -310,6 +405,7 @@ async def info_command(inter: discord.Interaction, _input: str):
             f"`Maximum Supply: {max_supply:,.4f}`\n"
             f"`Reserve Supply: {reserve_supply:,.4f}`\n"
             f"`In Circulation: {circulation_supply:,.4f}`\n"
+            f"`In Trading: {trade_supply:,.4f}`\n"
             f"`Date Created: {date_creation}`"
         )
 
@@ -325,6 +421,11 @@ async def info_command(inter: discord.Interaction, _input: str):
 async def receipt_command(inter: discord.Interaction, transaction_uuid: str):
     try:
         await inter.response.defer(ephemeral=True)
+        # if not is_dm(inter):
+        #     await inter.followup.send(
+        #         "** You cannot use this bot in a server, DM me instead. **"
+        #     )
+        #     return
         result = await Currency.get_transaction_info(transaction_uuid)
         if result is None:
             await inter.followup.send(
@@ -360,6 +461,11 @@ async def trade_command(inter: discord.Interaction,
                         amount: str):
     try:
         await inter.response.defer(ephemeral=True)
+        # if not is_dm(inter):
+        #     await inter.followup.send(
+        #         "** You cannot use this bot in a server, DM me instead. **"
+        #     )
+        #     return
         match trade_type.lower():
             case 'buy' | 'b':
                 trade_type = Trading.TradeType.BUY
@@ -416,6 +522,11 @@ async def trade_command(inter: discord.Interaction,
 async def close_trade(inter: discord.Interaction, trade_number: int):
     try:
         await inter.response.defer(ephemeral=True)
+        # if not is_dm(inter):
+        #     await inter.followup.send(
+        #         "** You cannot use this bot in a server, DM me instead. **"
+        #     )
+        #     return
         result = await Currency.cancel_trade(inter.user.id, trade_number)
         if result == 0:
             await inter.followup.send(
@@ -440,6 +551,11 @@ async def close_trade(inter: discord.Interaction, trade_number: int):
 async def chart_command(inter: discord.Interaction, base_ticker: str, quote_ticker: str, scale: str, limit: int):
     try:
         await inter.response.defer(ephemeral=True)
+        # if not is_dm(inter):
+        #     await inter.followup.send(
+        #         "** You cannot use this bot in a server, DM me instead. **"
+        #     )
+        #     return
         match scale.lower():
             case '1s':
                 chosen_scale = ViewTrade.TimeScale.SECOND
@@ -495,6 +611,11 @@ async def chart_command(inter: discord.Interaction, base_ticker: str, quote_tick
 async def mint_command(inter: discord.Interaction, amount: float):
     try:
         await inter.response.defer(ephemeral=True)
+        # if not is_dm(inter):
+        #     await inter.followup.send(
+        #         "** You cannot use this bot in a server, DM me instead. **"
+        #     )
+        #     return
         if not NumberFormatter.validate_decimal_places(amount):
             await inter.followup.send(
                 f"> ## ⛔ Fail to mint\n"
@@ -536,6 +657,11 @@ async def mint_command(inter: discord.Interaction, amount: float):
 async def burn_command(inter: discord.Interaction, amount: float):
     try:
         await inter.response.defer(ephemeral=True)
+        # if not is_dm(inter):
+        #     await inter.followup.send(
+        #         "** You cannot use this bot in a server, DM me instead. **"
+        #     )
+        #     return
         if not NumberFormatter.validate_decimal_places(amount):
             await inter.followup.send(
                 f"> ## ⛔ Fail to burn\n"
@@ -572,12 +698,79 @@ async def burn_command(inter: discord.Interaction, amount: float):
         raise e
 
 
+@bot.tree.command(name="wire_transfer", description="Transfer funds to using other bots.")
+@app_commands.choices(
+    provider=[
+        app_commands.Choice(name="UnbelievaBoat", value=0),
+    ]
+)
+@app_commands.choices(
+    action=[
+        app_commands.Choice(name="DEPOSIT", value=1),
+        app_commands.Choice(name="WITHDRAW", value=0),
+    ]
+)
+async def wire_transfer_command(inter: discord.Interaction,
+                                provider: app_commands.Choice[int],
+                                action: app_commands.Choice[int],
+                                amount: int):
+    try:
+        await inter.response.defer(ephemeral=True)
+        match provider.value:
+            case 0:
+                result = await boat_transfer(inter.user.id, inter.guild_id, action.value, amount)
+                if result == 0:
+                    await inter.followup.send(
+                        "> ### Wire transfer successful"
+                    )
+                elif result == -1:
+                    await inter.followup.send(
+                        "> ### Insufficient Funds"
+                    )
+                elif result == -2:
+                    await inter.followup.send(
+                        "> ### Provider's currency does not exist"
+                    )
+            case _:
+                await inter.followup.send(
+                    "> ### Provider not supported"
+                )
+    except Exception as e:
+        await inter.followup.send(e)
+
+
+async def boat_transfer(discord_id: int, guild_id: int, action, amount):
+    try:
+        economy = Economy(discord_id, guild_id)
+        boat = WireTransfer.BoatTransfer(economy)
+        return await boat.transfer(amount, WireTransfer.Action(action))
+    except Exception as e:
+        raise e
+
+
 # @bot.tree.command(name="test", description="Debug")
-# async def hello(interaction: discord.Interaction):
-#     await interaction.response.defer(ephemeral=True)
-#     await interaction.followup.send(
-#         f'{interaction.user.id}\n{user.id}'
-#     )
+# async def test(interaction: discord.Interaction):
+#     try:
+#         await interaction.response.defer()
+#         id = await Currency.get_currency_id(interaction.guild_id, Currency.InputType.GUILD_ID.value)
+#         if id is None:
+#             id = "None"
+#         await interaction.followup.send(id)
+#     except Exception as e:
+#         await interaction.followup.send(e)
+
+
+# class Questionnaire(discord.ui.Modal, title='Questionnaire Response'):
+#     def __init__(self, *args, **kwargs):
+#         super().__init__(*args, **kwargs)
+#
+#         self.add_item(discord.ui.TextInput(label="Amount"))
+#     async def buy(self, interaction: discord.Interaction, button: discord.Button):
+#         pass
+#     async def on_submit(self, interaction: discord.Interaction) -> None:
+#         embed = discord.Embed(title="test")
+#         embed.add_field(name="Value", value=self.children[0])
+#         await interaction.response.send_message(embeds=[embed])
 
 
 bot.run(properties['TOKEN'], log_handler=handler)

@@ -15,6 +15,8 @@ class InputType(enum.Enum):
     CURRENCY_NAME = 0
     ACCOUNT_ID = 1
     TICKER = 2
+    GUILD_ID = 3
+    CURRENCY_ID = 4
 
 
 async def get_connection():
@@ -34,7 +36,8 @@ async def create_tables():
             CREATE TABLE IF NOT EXISTS currencies(
             id INTEGER PRIMARY KEY,
             name VARCHAR(50) NOT NULL,
-            ticker VARCHAR(4) NOT NULL CHECK(ticker GLOB '[A-Z]*')
+            ticker VARCHAR(4) NOT NULL CHECK(ticker GLOB '[A-Z]*'),
+            guild_id INT
             )
             '''
         )
@@ -211,6 +214,84 @@ async def create_currency(discord_id: int, name: str, ticker: str, initial_balan
     except Exception as e:
         await db.rollback()
         await db.close()
+        raise e
+    finally:
+        await db.close()
+
+async def set_currency_guild_id(discord_id: int, guild_id: int):
+    db = await get_connection()
+    try:
+        async with db.cursor() as cursor:
+            await cursor.execute(
+                '''
+                SELECT
+                    COUNT(*)
+                FROM
+                    currencies
+                WHERE
+                    guild_id = ?
+                ''',
+                (
+                    guild_id,
+                )
+            )
+            count = await cursor.fetchone()
+            if count[0] > 0:
+                return -1
+            central_account = await get_central_account(discord_id, is_discord_id=True)
+            if central_account is None:
+                return -2
+            if discord_id != central_account[7]:
+                return -3
+            await cursor.execute(
+                '''
+                UPDATE
+                    currencies
+                SET
+                    guild_id = ?
+                WHERE
+                    id = ?
+                ''',
+                (
+                    guild_id,
+                    central_account[6]
+                )
+            )
+            await db.commit()
+            return 0
+    except Exception as e:
+        await db.rollback()
+        raise e
+    finally:
+        await db.close()
+
+
+async def unset_currency_guild_id(discord_id: int):
+    db = await get_connection()
+    try:
+        async with db.cursor() as cursor:
+            central_account = await get_central_account(discord_id, is_discord_id=True)
+            if central_account is None:
+                return -1
+            if discord_id != central_account[7]:
+                return -2
+            await cursor.execute(
+                '''
+                UPDATE
+                    currencies
+                SET
+                    guild_id = NULL
+                WHERE
+                    id = ?
+                ''',
+                (
+                    central_account[6],
+                )
+            )
+            await db.commit()
+            return 0
+    except Exception as e:
+        await db.rollback()
         raise e
     finally:
         await db.close()
@@ -405,7 +486,7 @@ async def get_discord_id(acn: str):
         await db.close()
 
 
-async def get_currency_ticker(search: str, find_by=0):
+async def get_currency_ticker(search, find_by=0):
     db = await get_connection()
     try:
         async with db.cursor() as cursor:
@@ -414,9 +495,8 @@ async def get_currency_ticker(search: str, find_by=0):
             elif find_by == 1:
                 column_name = 'b.account_id'
                 search = Account.to_bytes(search)
-            elif find_by == 2:
-                column_name = 'c.ticker'
-                search = search.upper()
+            elif find_by == 4:
+                column_name = "c.id"
             else:
                 return None
             await cursor.execute(
@@ -480,7 +560,7 @@ async def get_currency_name(search: str, find_by=1):
         await db.close()
 
 
-async def get_currency_id(search: str, find_by=0):
+async def get_currency_id(search, find_by=0):
     db = await get_connection()
     try:
         async with db.cursor() as cursor:
@@ -492,6 +572,8 @@ async def get_currency_id(search: str, find_by=0):
             elif find_by == 2:
                 column_name = 'c.ticker'
                 search = search.upper()
+            elif find_by == 3:
+                column_name = 'c.guild_id'
             else:
                 return None
             await cursor.execute(
@@ -689,12 +771,65 @@ async def get_balance_id(discord_id: int, currency_id: int):
         await db.close()
 
 
-async def get_central_account(currency_id: int):
+async def get_active_trades_supply(currency_id: int):
     db = await get_connection()
     try:
         async with db.cursor() as cursor:
             await cursor.execute(
                 '''
+                SELECT
+                    SUM(amount)
+                FROM
+                    active_trades   
+                WHERE
+                    base_currency_id = ?
+                    AND trade_type = 1
+                ''',
+                (
+                    currency_id,
+                )
+            )
+            sell_worth = await cursor.fetchone()
+            if sell_worth is None:
+                return None
+            if sell_worth[0] is None:
+                sell_worth = [0]
+            await cursor.execute(
+                '''
+                SELECT
+                    SUM(amount)
+                FROM
+                    active_trades
+                WHERE
+                    base_currency_id = ?
+                    AND trade_type = 0
+                ''',
+                (
+                    currency_id,
+                )
+            )
+            buy_worth = await cursor.fetchone()
+            if buy_worth is None:
+                return None
+            if buy_worth[0] is None:
+                buy_worth = [0]
+            return sell_worth[0] + buy_worth[0]
+    except Exception as e:
+        raise e
+    finally:
+        await db.close()
+
+
+async def get_central_account(unique_id: int, is_discord_id=False):
+    db = await get_connection()
+    try:
+        async with db.cursor() as cursor:
+            if is_discord_id:
+                column_name = "user_discord_id"
+            else:
+                column_name = "currency_id"
+            await cursor.execute(
+                f'''
                 SELECT
                     *
                 FROM
@@ -705,12 +840,12 @@ async def get_central_account(currency_id: int):
                     b.id = t.balance_sender_id
                     AND b.id = t.balance_receiver_id
                 WHERE
-                    currency_id = ?
+                    {column_name} = ?
                 ORDER BY
                     t.transaction_date ASC
                 LIMIT 1
                 ''',
-                (currency_id,)
+                (unique_id,)
             )
             row = await cursor.fetchone()
             if row is None:
