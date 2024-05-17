@@ -14,7 +14,7 @@ import Trading
 import ViewTrade
 from Trading import Trade
 from Boat import Economy
-from project import WireTransfer
+import WireTransfer
 handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
 
 intents = discord.Intents.default()
@@ -109,12 +109,12 @@ async def create_currency(inter: discord.Interaction, name: str, ticker: str, in
 async def set_guild_command(inter: discord.Interaction):
     try:
         await inter.response.defer(ephemeral=True)
-        # if is_dm(inter):
-        #     await inter.followup.send(
-        #         "> ### You cannot use this bot in a DM. \n"
-        #         "> Please run this command on the server you want to set it."
-        #     )
-        #     return
+        if is_dm(inter):
+            await inter.followup.send(
+                "> ### You cannot use this bot in a DM. \n"
+                "> Please run this command on the server you want to set it."
+            )
+            return
         result = await Currency.set_currency_guild_id(inter.user.id, inter.guild_id)
         if result == 0:
             await inter.followup.send(
@@ -140,12 +140,12 @@ async def set_guild_command(inter: discord.Interaction):
 async def unset_guild_command(inter: discord.Interaction):
     try:
         await inter.response.defer(ephemeral=True)
-        # if is_dm(inter):
-        #     await inter.followup.send(
-        #         "> ### You cannot use this bot in a DM. \n"
-        #         "> Please run this command on the server you want to set it."
-        #     )
-        #     return
+        if is_dm(inter):
+            await inter.followup.send(
+                "> ### You cannot use this bot in a DM. \n"
+                "> Please run this command on the server you want to set it."
+            )
+            return
         result = await Currency.unset_currency_guild_id(inter.user.id)
         if result == 0:
             await inter.followup.send(
@@ -453,8 +453,14 @@ async def receipt_command(inter: discord.Interaction, transaction_uuid: str):
     price="The price that you are willing to pay for one currency",
     amount="How many do you want to buy"
 )
+@app_commands.choices(
+    trade_type=[
+        app_commands.Choice(name="BUY", value="b"),
+        app_commands.Choice(name="SELL", value="s")
+    ]
+)
 async def trade_command(inter: discord.Interaction,
-                        trade_type: str,
+                        trade_type: app_commands.Choice[str],
                         base_ticker: str,
                         quote_ticker: str,
                         price: str,
@@ -466,7 +472,7 @@ async def trade_command(inter: discord.Interaction,
         #         "** You cannot use this bot in a server, DM me instead. **"
         #     )
         #     return
-        match trade_type.lower():
+        match trade_type.value:
             case 'buy' | 'b':
                 trade_type = Trading.TradeType.BUY
             case 'sell' | 's':
@@ -716,6 +722,11 @@ async def wire_transfer_command(inter: discord.Interaction,
                                 amount: int):
     try:
         await inter.response.defer(ephemeral=True)
+        if is_dm(inter):
+            await inter.followup.send(
+                "> ### You cannot use this bot in a DM."
+            )
+            return
         match provider.value:
             case 0:
                 result = await boat_transfer(inter.user.id, inter.guild_id, action.value, amount)

@@ -656,6 +656,7 @@ async def create_address(discord_id: int, search: str, find_by=0):
             await db.commit()
             return acn_bytes
     except Exception as e:
+        await db.close()
         raise e
     finally:
         await db.close()
@@ -893,6 +894,7 @@ async def get_maximum_supply(currency_id: int):
                 return None
             return max_supply[0]
     except Exception as e:
+        await db.close()
         raise e
     finally:
         await db.close()
@@ -1079,6 +1081,7 @@ async def trade(discord_id, user_trade: Trade):
                 return 0, selected_trade[1], selected_trade[0], is_fulfilled
     except Exception as e:
         await db.rollback()
+        await db.close()
         raise e
     finally:
         await db.close()
@@ -1257,6 +1260,7 @@ async def last_trade_price(base_ticker, quote_ticker):
                 return None
             return price[0]
     except Exception as e:
+        await db.close()
         raise e
     finally:
         await db.close()
@@ -1302,6 +1306,7 @@ async def get_bid_ask_price(base_ticker, quote_ticker):
                 ask_price = ask_price[0]
             return bid_price, ask_price
     except Exception as e:
+        await db.close()
         raise e
     finally:
         await db.close()
@@ -1363,6 +1368,7 @@ async def mint_currency(discord_id: int, amount: float, is_subtract=False):
             await db.commit()
             return 0
     except Exception as e:
+        await db.close()
         raise e
     finally:
         await db.close()
