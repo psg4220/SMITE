@@ -20,7 +20,7 @@ class Economy:
             "Authorization": self.auth
         }
         response = requests.get(url, headers=headers)
-        return response.json()
+        return response.json(), response.status_code
 
     def set_balance(self, cash: int, bank: int):
         url = f"https://unbelievaboat.com/api/v1/guilds/{self.guild_id}/users/{self.user_id}"
@@ -35,7 +35,7 @@ class Economy:
             "Authorization": self.auth
         }
         response = requests.put(url, json=payload, headers=headers)
-        return response.json()
+        return response.json(), response.status_code
 
     def update_balance(self, cash=0, bank=0):
         url = f"https://unbelievaboat.com/api/v1/guilds/{self.guild_id}/users/{self.user_id}"
@@ -50,4 +50,5 @@ class Economy:
             "Authorization": self.auth
         }
         response = requests.patch(url, json=payload, headers=headers)
-        return response.json()
+        return response.json(), response.status_code
+

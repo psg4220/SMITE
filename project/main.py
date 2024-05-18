@@ -60,11 +60,11 @@ async def on_ready():
 async def create_currency(inter: discord.Interaction, name: str, ticker: str, initial_supply: float):
     try:
         await inter.response.defer(ephemeral=True)
-        # if not is_dm(inter):
-        #     await inter.followup.send(
-        #         "** You cannot use this bot in a server, DM me instead. **"
-        #     )
-        #     return
+        if is_dm(inter):
+            await inter.followup.send(
+                "** Use this command in your server. **"
+            )
+            return
         if not NumberFormatter.validate_decimal_places(initial_supply):
             await inter.followup.send(
                 f'> ## ⛔ Failed to create a currency\n'
@@ -79,10 +79,12 @@ async def create_currency(inter: discord.Interaction, name: str, ticker: str, in
             return
         result = await Currency.create_currency(
             inter.user.id,
+            inter.guild_id,
             name,
             ticker,
             initial_supply
         )
+        await Currency.set_currency_guild_id(inter.user.id, inter.guild_id)
         if result == 0:
             await inter.followup.send(f'> ## ✅ Currency {name} ({ticker.upper()}) has been created!')
         elif result == -2:
@@ -94,6 +96,11 @@ async def create_currency(inter: discord.Interaction, name: str, ticker: str, in
             await inter.followup.send(
                 f"> ## ⛔ Failed to create a currency\n"
                 "> ⚠️ Ticker must have a minimum characters of 3 and a maximum of 4"
+            )
+        elif result == -4:
+            await inter.followup.send(
+                f"> ## ⛔ Failed to create a currency\n"
+                "> ⚠️ Server already has a currency"
             )
         else:
             await inter.followup.send(
@@ -123,21 +130,20 @@ async def set_guild_command(inter: discord.Interaction):
             )
         elif result == -1:
             await inter.followup.send(
-                "> ### Your currency is already set to a guild."
+                "> ### Your currency is already set to a guild\n"
+                "> ### Or this guild has been already set by someone"
             )
         elif result == -2:
             await inter.followup.send(
                 "> ### You haven't created your currency yet."
             )
-        elif result == -3:
-            await inter.followup.send(
-                '> ### You do not have permission to use this command'
-            )
     except Exception as e:
         await inter.followup.send(e)
 
 
-@bot.tree.command(name="unset_guild", description="Sets the guild id to your currency")
+@bot.tree.command(name="unset_guild",
+                  description="unsets the guild id to your currency "
+                              "(WARNING: if left unset anyone could /set_guild your server)")
 async def unset_guild_command(inter: discord.Interaction):
     try:
         await inter.response.defer(ephemeral=True)
@@ -158,7 +164,7 @@ async def unset_guild_command(inter: discord.Interaction):
             )
         elif result == -2:
             await inter.followup.send(
-                '> ### You do not have permission to use this command'
+                "> ### You do not own this server."
             )
     except Exception as e:
         await inter.followup.send(e)
@@ -173,6 +179,11 @@ async def unset_guild_command(inter: discord.Interaction):
 async def set_auth_command(inter: discord.Interaction, provider: app_commands.Choice[int], auth: str):
     try:
         await inter.response.defer(ephemeral=True)
+        if not await Currency.is_authorized_user(inter.user.id, inter.guild_id):
+            await inter.followup.send(
+                '> ### You do not have permission to use this command'
+            )
+            return
         match provider.value:
             case WireTransfer.Provider.UNBELIEVABOAT.value:
                 result = await Currency.create_provider_auth(inter.user.id,
@@ -187,9 +198,10 @@ async def set_auth_command(inter: discord.Interaction, provider: app_commands.Ch
                                                      auth)
                 elif result == -2:
                     await inter.followup.send(
-                        '> ### You do not have permission to use this command or you havent created a currency yet'
+                        '> ### You havent created a currency yet'
                     )
-                await inter.followup.send("> ### Auth provider added")
+                    return
+                await inter.followup.send("> ### Auth provider has been set")
             case _:
                 return
     except Exception as e:
@@ -777,7 +789,8 @@ async def wire_transfer_command(inter: discord.Interaction,
                     )
                 elif result == -3:
                     await inter.followup.send(
-                        "> ### Provider's auth not set"
+                        "> ### Wire Transfer Failed.\n"
+                        "> ### Please contact server admin immediately."
                     )
             case _:
                 await inter.followup.send(
@@ -822,6 +835,5 @@ async def boat_transfer(discord_id: int, guild_id: int, action, amount):
 #         embed = discord.Embed(title="test")
 #         embed.add_field(name="Value", value=self.children[0])
 #         await interaction.response.send_message(embeds=[embed])
-
 
 bot.run(properties['TOKEN'], log_handler=handler)

@@ -23,7 +23,10 @@ class BoatTransfer:
         try:
             # Unbelievaboat account debited
             balance = self.economy.get_balance()
-            boat_bank_balance = balance["bank"]
+            status_code = balance[1]
+            if status_code >= 400:
+                return -3
+            boat_bank_balance = balance[0]["bank"]
             currency_id = await Currency.get_currency_id(self.economy.guild_id, Currency.InputType.GUILD_ID.value)
             currency_ticker = await Currency.get_currency_ticker(currency_id, Currency.InputType.CURRENCY_ID.value)
             smite_balance = await Currency.view_balance(self.economy.user_id,
@@ -32,7 +35,10 @@ class BoatTransfer:
                                                         )
             if (smite_balance - amount) < 0 and action == Action.DEPOSIT:
                 return -1
-            self.economy.update_balance(cash=0, bank=-amount if action == Action.WITHDRAW else amount)
+            status_code = self.economy.update_balance(cash=0, bank=-amount if action == Action.WITHDRAW else amount)[1]
+            if status_code >= 400:
+                return -3
+
             # SMITE account credited
             if currency_id is None:
                 return -2
@@ -41,7 +47,7 @@ class BoatTransfer:
             await Currency.edit_balance(self.economy.user_id,
                                         currency_id,
                                         amount,
-                                        is_subtract=False if action == Action.WITHDRAW else amount)
+                                        is_subtract=False if action == Action.WITHDRAW else True)
             return 0
         except Exception as e:
             raise e

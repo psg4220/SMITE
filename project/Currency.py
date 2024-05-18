@@ -177,7 +177,7 @@ async def create_tables():
         await db.close()
 
 
-async def create_currency(discord_id: int, name: str, ticker: str, initial_balance: float):
+async def create_currency(discord_id: int, guild_id: int, name: str, ticker: str, initial_balance: float):
     if not ticker.isalpha():
         return -2
     if 3 > len(ticker) >= 4:
@@ -220,6 +220,10 @@ async def create_currency(discord_id: int, name: str, ticker: str, initial_balan
                 ''',
                 (uuid.uuid4().bytes, balance_id, balance_id, initial_balance)
             )
+            result = await set_currency_guild_id(discord_id, guild_id)
+            if result == -1:
+                await db.rollback()
+                return -4
         await db.commit()
         return 0
     except Exception as e:
@@ -230,7 +234,7 @@ async def create_currency(discord_id: int, name: str, ticker: str, initial_balan
         await db.close()
 
 
-async def set_currency_guild_id(discord_id: int, guild_id: int):
+async def has_currency(guild_id: int):
     db = await get_connection()
     try:
         async with db.cursor() as cursor:
@@ -243,18 +247,28 @@ async def set_currency_guild_id(discord_id: int, guild_id: int):
                 WHERE
                     guild_id = ?
                 ''',
-                (
-                    guild_id,
-                )
+                (guild_id,)
             )
             count = await cursor.fetchone()
             if count[0] > 0:
+                return True
+            return False
+    except Exception as e:
+        await db.close()
+        raise e
+    finally:
+        await db.close()
+
+
+async def set_currency_guild_id(discord_id: int, guild_id: int):
+    db = await get_connection()
+    try:
+        async with db.cursor() as cursor:
+            if await has_currency(guild_id):
                 return -1
             central_account = await get_central_account(discord_id, is_discord_id=True)
             if central_account is None:
                 return -2
-            if discord_id != central_account[7]:
-                return -3
             await cursor.execute(
                 '''
                 UPDATE
@@ -285,8 +299,6 @@ async def unset_currency_guild_id(discord_id: int):
             central_account = await get_central_account(discord_id, is_discord_id=True)
             if central_account is None:
                 return -1
-            if discord_id != central_account[7]:
-                return -2
             await cursor.execute(
                 '''
                 UPDATE
@@ -1381,6 +1393,37 @@ async def mint_currency(discord_id: int, amount: float, is_subtract=False):
             return 0
     except Exception as e:
         await db.close()
+        raise e
+    finally:
+        await db.close()
+
+
+async def is_authorized_user(discord_id: int, guild_id: int):
+    db = await get_connection()
+    try:
+        async with db.cursor() as cursor:
+            await cursor.execute(
+                '''
+                SELECT
+                    id
+                FROM
+                    currencies
+                WHERE
+                    guild_id = ?
+                ''',
+                (guild_id,)
+            )
+            currency_id = await cursor.fetchone()
+            if currency_id is None:
+                return False
+            central_account = await get_central_account(discord_id, is_discord_id=True)
+            if central_account is None:
+                return False
+            if central_account[6] != currency_id[0]:
+                return False
+            return True
+
+    except Exception as e:
         raise e
     finally:
         await db.close()
