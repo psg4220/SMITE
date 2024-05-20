@@ -603,7 +603,22 @@ async def close_trade(inter: discord.Interaction, trade_number: int):
 
 
 @bot.tree.command(name="chart", description="Views the Chart of a market")
-async def chart_command(inter: discord.Interaction, base_ticker: str, quote_ticker: str, scale: str, limit: int):
+@app_commands.choices(
+    scale=[
+        app_commands.Choice(name="1 SECOND", value="1s"),
+        app_commands.Choice(name="1 MINUTE", value="1m"),
+        app_commands.Choice(name="1 HOUR", value="1h"),
+        app_commands.Choice(name="1 DAY", value="1d"),
+        app_commands.Choice(name="2 DAYS", value="2d"),
+        app_commands.Choice(name="1 WEEK", value="1w"),
+        app_commands.Choice(name="1 MONTH", value="1mnt")
+    ]
+)
+async def chart_command(inter: discord.Interaction,
+                        base_ticker: str,
+                        quote_ticker: str,
+                        scale: app_commands.Choice[str] = "1s",
+                        limit: int = 500):
     try:
         await inter.response.defer(ephemeral=True)
         # if not is_dm(inter):
@@ -611,7 +626,7 @@ async def chart_command(inter: discord.Interaction, base_ticker: str, quote_tick
         #         "** You cannot use this bot in a server, DM me instead. **"
         #     )
         #     return
-        match scale.lower():
+        match scale.value:
             case '1s':
                 chosen_scale = ViewTrade.TimeScale.SECOND
             case '1m' | '60s':
@@ -814,6 +829,25 @@ async def boat_transfer(discord_id: int, guild_id: int, action, amount):
         return await boat.transfer(amount, WireTransfer.Action(action))
     except Exception as e:
         raise e
+
+@bot.tree.command(name="currencies", description="List of all currencies")
+@app_commands.choices(
+    order=[
+        app_commands.Choice(name="FIRST", value=0),
+        app_commands.Choice(name="RECENT", value=1),
+    ]
+)
+@app_commands.describe(order="Shows the list from FIRST or RECENT", page="The page")
+async def currencies_command(inter: discord.Interaction, order: app_commands.Choice[int], page: int = 1):
+    try:
+        await inter.response.defer(ephemeral=True)
+        currencies = await Currency.get_currencies(page=page, show_last=True if order.value == 1 else False)
+        currencies_display = "> `Currencies List`\n"
+        for c in currencies:
+            currencies_display += f"> `{c[0]} | {c[1]}`\n"
+        await inter.followup.send(currencies_display)
+    except Exception as e:
+        await inter.followup.send(e)
 
 
 # @bot.tree.command(name="test", description="Debug")

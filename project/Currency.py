@@ -962,7 +962,7 @@ async def trade(discord_id, user_trade: Trade):
                 AND quote_currency_id = ?
                 AND price = ?
                 AND amount >= ? 
-                AND user_discord_id != ?
+                AND NOT user_discord_id = ?
                 ORDER BY amount ASC
                 LIMIT 1
                 ''',
@@ -1542,6 +1542,33 @@ async def get_provider_auth(guild_id: int, provider: WireTransfer.Provider):
             if auth_token is None:
                 return None
             return auth_token[0]
+    except Exception as e:
+        await db.close()
+        raise e
+    finally:
+        await db.close()
+
+
+async def get_currencies(limit=10,page=1, show_last=False):
+    db = await get_connection()
+    try:
+        async with db.cursor() as cursor:
+            await cursor.execute(
+                f'''
+                SELECT 
+                    ticker, name 
+                FROM 
+                    currencies 
+                ORDER BY 
+                    id {"DESC" if show_last else "ASC"} 
+                LIMIT {limit} 
+                OFFSET {page-1}
+                '''
+            )
+            currencies = await cursor.fetchall()
+            if currencies is None:
+                return -1
+            return currencies
     except Exception as e:
         await db.close()
         raise e
