@@ -9,7 +9,7 @@ import logging
 
 import Account
 import Currency
-import NumberFormatter
+import InputFormatter
 import Trading
 import ViewTrade
 from Trading import Trade
@@ -65,7 +65,20 @@ async def create_currency(inter: discord.Interaction, name: str, ticker: str, in
                 "** Use this command in your server. **"
             )
             return
-        if not NumberFormatter.validate_decimal_places(initial_supply):
+        if inter.guild.owner_id != inter.user.id:
+            await inter.followup.send(
+                "** You must be an admin to create a currency at this guild. **"
+            )
+            return
+        if not InputFormatter.is_valid_ticker(ticker):
+            await inter.followup.send(
+                f'> ## ⛔ Failed to create a currency\n'
+                f'> ⚠️ Your ticker is not a valid format.\n'
+                f'> `Make sure that your ticker doesnt contain symbols, numbers.` \n'
+                f'> `Tickers should be 3 or 4 letters long`'
+            )
+            return
+        if not InputFormatter.validate_decimal_places(initial_supply):
             await inter.followup.send(
                 f'> ## ⛔ Failed to create a currency\n'
                 f'> ⚠️ Maximum of 4 decimal places only.'
@@ -87,27 +100,18 @@ async def create_currency(inter: discord.Interaction, name: str, ticker: str, in
         await Currency.set_currency_guild_id(inter.user.id, inter.guild_id)
         if result == 0:
             await inter.followup.send(f'> ## ✅ Currency {name} ({ticker.upper()}) has been created!')
-        elif result == -2:
-            await inter.followup.send(
-                f"> ## ⛔ Failed to create a currency\n"
-                "> ⚠️ Special characters are not allowed in ticker"
-            )
-        elif result == -3:
-            await inter.followup.send(
-                f"> ## ⛔ Failed to create a currency\n"
-                "> ⚠️ Ticker must have a minimum characters of 3 and a maximum of 4"
-            )
-        elif result == -4:
-            await inter.followup.send(
-                f"> ## ⛔ Failed to create a currency\n"
-                "> ⚠️ Server already has a currency"
-            )
-        else:
+        elif result == -1:
             await inter.followup.send(
                 "> ## ⛔ Failed to create a currency ⛔\n"
                 "> ⚠️ Make sure that you didn't created any previous currency\n"
                 "> ⚠️ And make sure that the currency name does not already exist"
             )
+        elif result == -2:
+            await inter.followup.send(
+                f"> ## ⛔ Failed to create a currency\n"
+                "> ⚠️ Server already has a currency"
+            )
+
     except Exception as e:
         await inter.followup.send(f"Something went wrong:\n{e}")
         raise e
@@ -282,7 +286,7 @@ async def transfer(inter: discord.Interaction, receiver_address: str, amount: fl
         #         "** You cannot use this bot in a server, DM me instead. **"
         #     )
         #     return
-        if not NumberFormatter.validate_decimal_places(amount):
+        if not InputFormatter.validate_decimal_places(amount):
             await inter.followup.send(
                 "> ## ⚠️ Maximum number of decimal places is reached (4 max)"
             )
@@ -667,7 +671,7 @@ async def mint_command(inter: discord.Interaction, amount: float):
         #         "** You cannot use this bot in a server, DM me instead. **"
         #     )
         #     return
-        if not NumberFormatter.validate_decimal_places(amount):
+        if not InputFormatter.validate_decimal_places(amount):
             await inter.followup.send(
                 f"> ## ⛔ Fail to mint\n"
                 f"> ### Maximum number of decimal places reached (4 max)"
@@ -713,7 +717,7 @@ async def burn_command(inter: discord.Interaction, amount: float):
         #         "** You cannot use this bot in a server, DM me instead. **"
         #     )
         #     return
-        if not NumberFormatter.validate_decimal_places(amount):
+        if not InputFormatter.validate_decimal_places(amount):
             await inter.followup.send(
                 f"> ## ⛔ Fail to burn\n"
                 f"> ### Maximum number of decimal places reached (4 max)"

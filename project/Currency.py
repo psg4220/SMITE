@@ -178,10 +178,6 @@ async def create_tables():
 
 
 async def create_currency(discord_id: int, guild_id: int, name: str, ticker: str, initial_balance: float):
-    if not ticker.isalpha():
-        return -2
-    if 3 > len(ticker) >= 4:
-        return -3
     db = await get_connection()
     try:
         async with db.cursor() as cursor:
@@ -223,7 +219,7 @@ async def create_currency(discord_id: int, guild_id: int, name: str, ticker: str
             result = await set_currency_guild_id(discord_id, guild_id)
             if result == -1:
                 await db.rollback()
-                return -4
+                return -2
         await db.commit()
         return 0
     except Exception as e:
@@ -966,6 +962,7 @@ async def trade(discord_id, user_trade: Trade):
                 AND quote_currency_id = ?
                 AND price = ?
                 AND amount >= ? 
+                AND user_discord_id != ?
                 ORDER BY amount ASC
                 LIMIT 1
                 ''',
@@ -976,7 +973,8 @@ async def trade(discord_id, user_trade: Trade):
                     base_currency_id,
                     quote_currency_id,
                     user_trade.price,
-                    user_trade.amount
+                    user_trade.amount,
+                    discord_id
                 )
             )
             selected_trade = await cursor.fetchone()

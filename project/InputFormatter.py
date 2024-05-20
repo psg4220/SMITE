@@ -19,3 +19,18 @@ def validate_decimal_places(number):
             return False
     return True
 
+
+def has_special_characters(string: str):
+    for c in string:
+        if not c.isalpha():
+            return True
+    return False
+
+
+def is_valid_ticker(ticker: str):
+    if has_special_characters(ticker):
+        return False
+    ticker_length = len(ticker)
+    if ticker_length < 3 or ticker_length > 4:
+        return False
+    return True
