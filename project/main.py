@@ -840,7 +840,7 @@ async def boat_transfer(discord_id: int, guild_id: int, action, amount):
 @app_commands.describe(order="Shows the list from FIRST or RECENT", page="The page")
 async def currencies_command(inter: discord.Interaction, order: app_commands.Choice[int], page: int = 1):
     try:
-        await inter.response.defer(ephemeral=True)
+        await inter.response.defer()
         currencies = await Currency.get_currencies(page=page, show_last=True if order.value == 1 else False)
         currencies_display = "> `Currencies List`\n"
         for c in currencies:
@@ -850,16 +850,38 @@ async def currencies_command(inter: discord.Interaction, order: app_commands.Cho
         await inter.followup.send(e)
 
 
+@bot.tree.command(name="edit_currency", description="Debug")
+async def edit_currency_command(inter: discord.Interaction, new_name: str, new_ticker: str):
+    try:
+        await inter.response.defer(ephemeral=True)
+        if is_dm(inter):
+            await inter.followup.send(
+                "> ### Execute this command in your server."
+            )
+            return
+        if inter.guild.owner_id != inter.user.id:
+            await inter.followup.send(
+                "> ### You do not have the permission to use this command."
+            )
+            return
+        await Currency.update_currency(inter.guild_id, new_name, new_ticker)
+        await inter.followup.send(
+            "> ## Your currency has been edited."
+        )
+    except Exception as e:
+        await inter.followup.send(e)
+
+
 # @bot.tree.command(name="test", description="Debug")
-# async def test(interaction: discord.Interaction):
+# async def test(inter: discord.Interaction):
 #     try:
-#         await interaction.response.defer()
-#         id = await Currency.get_currency_id(interaction.guild_id, Currency.InputType.GUILD_ID.value)
+#         await inter.response.defer()
+#         id = await Currency.get_currency_id(inter.guild_id, Currency.InputType.GUILD_ID.value)
 #         if id is None:
 #             id = "None"
-#         await interaction.followup.send(id)
+#         await inter.followup.send(id)
 #     except Exception as e:
-#         await interaction.followup.send(e)
+#         await inter.followup.send(e)
 
 
 # class Questionnaire(discord.ui.Modal, title='Questionnaire Response'):

@@ -8,6 +8,7 @@ import aiofiles
 import Account
 import Trading
 import WireTransfer
+import InputFormatter
 from Account import AccountNumber
 from Trading import Trade
 
@@ -1570,6 +1571,36 @@ async def get_currencies(limit=10,page=1, show_last=False):
                 return -1
             return currencies
     except Exception as e:
+        await db.close()
+        raise e
+    finally:
+        await db.close()
+
+
+async def update_currency(guild_id: int, new_name: str, new_ticker: str):
+    db = await get_connection()
+    try:
+        async with db.cursor() as cursor:
+            new_ticker = new_ticker.upper()
+            await cursor.execute(
+                f'''
+                UPDATE
+                    currencies
+                SET
+                    name = ?,
+                    ticker = ?
+                WHERE
+                    guild_id = ?
+                ''',
+                (
+                    new_name,
+                    new_ticker,
+                    guild_id
+                )
+            )
+            await db.commit()
+    except Exception as e:
+        await db.rollback()
         await db.close()
         raise e
     finally:
