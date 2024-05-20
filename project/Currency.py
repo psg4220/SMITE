@@ -1562,7 +1562,7 @@ async def get_currencies(limit=10,page=1, show_last=False):
                 ORDER BY 
                     id {"DESC" if show_last else "ASC"} 
                 LIMIT {limit} 
-                OFFSET {page-1}
+                OFFSET {(page-1) * limit}
                 '''
             )
             currencies = await cursor.fetchall()
