@@ -878,7 +878,7 @@ async def edit_currency_command(inter: discord.Interaction, new_name: str, new_t
         app_commands.Choice(name="SELL", value="SELL"),
     ]
 )
-async def test(inter: discord.Interaction,
+async def trade_list_command(inter: discord.Interaction,
                base_ticker: str,
                quote_ticker: str,
                trade_type: app_commands.Choice[str],
