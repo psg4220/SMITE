@@ -896,8 +896,8 @@ async def trade_list_command(inter: discord.Interaction,
             trade_list += f"> `==========`\n" \
                           f"> `Trade No. {t[0]}`\n" \
                           f"> `Wants to {trade_type.value}`\n" \
-                          f"> `{t[4]} {quote_ticker}`\n" \
-                          f"> `For the price of {t[3]} {base_ticker}`\n"
+                          f"> `{t[4]} {base_ticker}`\n" \
+                          f"> `For the price of {t[3]} {quote_ticker}`\n"
         await inter.followup.send(trade_list)
     except Exception as e:
         await inter.followup.send(e)
