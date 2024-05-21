@@ -1644,7 +1644,7 @@ async def trade_list(base_currency_ticker: str,
                 )
             )
             trades = await cursor.fetchall()
-            if trades is None:
+            if not trades:
                 return -1
             return trades
     except Exception as e:
