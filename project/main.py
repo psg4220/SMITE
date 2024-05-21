@@ -626,7 +626,7 @@ async def chart_command(inter: discord.Interaction,
         #         "** You cannot use this bot in a server, DM me instead. **"
         #     )
         #     return
-        match scale.value:
+        match scale.value if isinstance(scale, str) else scale:
             case '1s':
                 chosen_scale = ViewTrade.TimeScale.SECOND
             case '1m' | '60s':
