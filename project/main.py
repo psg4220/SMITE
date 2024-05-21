@@ -444,7 +444,7 @@ async def info_command(inter: discord.Interaction, _input: str):
             return
         circulation_supply = (max_supply - reserve_supply)
         date_creation_unix = await Currency.get_central_date_creation(currency_id)
-        date_creation = datetime.datetime.fromtimestamp(date_creation_unix, tz=datetime.UTC)\
+        date_creation = datetime.datetime.fromtimestamp(date_creation_unix, tz=datetime.UTC) \
             .strftime("%b %e, %Y%l:%M:%S %p")
         await inter.followup.send(
             f"`Currency Information`\n\n"
@@ -828,6 +828,7 @@ async def boat_transfer(discord_id: int, guild_id: int, action, amount):
     except Exception as e:
         raise e
 
+
 @bot.tree.command(name="currencies", description="List of all currencies")
 @app_commands.choices(
     order=[
@@ -866,6 +867,38 @@ async def edit_currency_command(inter: discord.Interaction, new_name: str, new_t
         await inter.followup.send(
             "> ## Your currency has been edited."
         )
+    except Exception as e:
+        await inter.followup.send(e)
+
+
+@bot.tree.command(name="trade_list", description="The list of active trades in a market")
+@app_commands.choices(
+    trade_type=[
+        app_commands.Choice(name="BUY", value="BUY"),
+        app_commands.Choice(name="SELL", value="SELL"),
+    ]
+)
+async def test(inter: discord.Interaction,
+               base_ticker: str,
+               quote_ticker: str,
+               trade_type: app_commands.Choice[str],
+               page: int = 1):
+    try:
+        await inter.response.defer(ephemeral=True)
+        trades = await Currency.trade_list(base_ticker, quote_ticker, trade_type.value, page)
+        if trades == -1:
+            await inter.followup.send(
+                f"> ### No active trades found"
+            )
+            return
+        trade_list = f"> `TRADE LIST ({trade_type.value} ORDERS)`\n"
+        for t in trades:
+            trade_list += f"> `==========`\n" \
+                          f"> `Trade No. {t[0]}`\n" \
+                          f"> `Wants to {trade_type.value}`\n" \
+                          f"> `{t[4]} {quote_ticker}`\n" \
+                          f"> `For the price of {t[3]} {base_ticker}`\n"
+        await inter.followup.send(trade_list)
     except Exception as e:
         await inter.followup.send(e)
 

@@ -144,8 +144,8 @@ async def create_tables():
             CREATE VIEW IF NOT EXISTS active_trade_summary AS
             SELECT
                 at.id,
-                base_currency.name AS base_currency_name,
-                quote_currency.name AS quote_currency_name,
+                base_currency.ticker AS base_currency_ticker,
+                quote_currency.ticker AS quote_currency_ticker,
                 at.user_discord_id,
                 CASE
                     WHEN at.trade_type = 0 THEN 'BUY'
@@ -1601,6 +1601,53 @@ async def update_currency(guild_id: int, new_name: str, new_ticker: str):
             await db.commit()
     except Exception as e:
         await db.rollback()
+        await db.close()
+        raise e
+    finally:
+        await db.close()
+
+
+async def trade_list(base_currency_ticker: str,
+                     quote_currency_ticker: str,
+                     trade_type: str,
+                     page: int = 1,
+                     limit: int = 10
+                     ):
+    db = await get_connection()
+    try:
+        async with db.cursor() as cursor:
+            await cursor.execute(
+                f'''
+                SELECT 
+                    id, 
+                    base_currency_ticker || '/' || quote_currency_ticker AS pair, 
+                    trade_type, 
+                    price, 
+                    amount
+                FROM 
+                    active_trade_summary
+                WHERE
+                    base_currency_ticker = ?
+                    AND quote_currency_ticker = ?
+                    AND trade_type = ?
+                ORDER BY
+                    price {'DESC' if trade_type == 'BUY' else 'ASC'}
+                LIMIT ?
+                OFFSET ?
+                ''',
+                (
+                    base_currency_ticker,
+                    quote_currency_ticker,
+                    trade_type,
+                    limit,
+                    page-1 * limit
+                )
+            )
+            trades = await cursor.fetchall()
+            if trades is None:
+                return -1
+            return trades
+    except Exception as e:
         await db.close()
         raise e
     finally:
