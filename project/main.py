@@ -442,11 +442,10 @@ async def info_command(inter: discord.Interaction, _input: str):
                 f"> `Report this in the SMITE discord server.`"
             )
             return
-        trade_supply = await Currency.get_active_trades_supply(currency_id)
         circulation_supply = (max_supply - reserve_supply)
         date_creation_unix = await Currency.get_central_date_creation(currency_id)
-        date_creation = datetime.datetime.fromtimestamp(date_creation_unix, tz=datetime.UTC) \
-            .strftime("%b%e, %Y%l:%M:%S %p")
+        date_creation = datetime.datetime.fromtimestamp(date_creation_unix, tz=datetime.UTC)\
+            .strftime("%b %e, %Y%l:%M:%S %p")
         await inter.followup.send(
             f"`Currency Information`\n\n"
             f"`Currency Name: {name}`\n"
@@ -454,7 +453,6 @@ async def info_command(inter: discord.Interaction, _input: str):
             f"`Maximum Supply: {max_supply:,.4f}`\n"
             f"`Reserve Supply: {reserve_supply:,.4f}`\n"
             f"`In Circulation: {circulation_supply:,.4f}`\n"
-            f"`In Trading: {trade_supply:,.4f}`\n"
             f"`Date Created: {date_creation}`"
         )
 
