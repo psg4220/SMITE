@@ -37,8 +37,8 @@ async def create_tables():
             '''
             CREATE TABLE IF NOT EXISTS currencies(
             id INTEGER PRIMARY KEY,
-            name VARCHAR(50) UNIQUE NOT NULL,
-            ticker VARCHAR(4) UNIQUE NOT NULL CHECK(ticker GLOB '[A-Z]*'),
+            name VARCHAR(50) NOT NULL,
+            ticker VARCHAR(4) NOT NULL CHECK(ticker GLOB '[A-Z]*'),
             guild_id INT
             )
             '''
@@ -1577,7 +1577,7 @@ async def get_currencies(limit=10, page=1, show_last=False):
         await db.close()
 
 
-async def update_currency(discord_id: int, new_field, find_by=0):
+async def update_currency(guild_id: int, new_field: str, find_by=0):
     db = await get_connection()
     try:
         async with db.cursor() as cursor:
@@ -1585,30 +1585,23 @@ async def update_currency(discord_id: int, new_field, find_by=0):
                 case InputType.CURRENCY_NAME.value:
                     column_name = "name"
                 case InputType.TICKER.value:
+                    new_field = new_field.upper()
                     column_name = "ticker"
                 case _:
                     return -1
             await cursor.execute(
-                '''
+                f'''
                 SELECT
-                    c.id
+                    COUNT(*)
                 FROM
-                    currencies AS c
-                INNER JOIN
-                    transactions AS t
-                INNER JOIN
-                    balance AS b
-                ON
-                    t.balance_sender_id = b.id
-                    AND t.balance_receiver_id = b.id
-                    AND b.currency_id = c.id
+                    currencies
                 WHERE
-                    user_discord_id = ?
+                    {column_name} = ? 
                 ''',
-                (discord_id,)
+                (new_field,)
             )
-            currency_id = await cursor.fetchone()
-            if currency_id is None:
+            count = await cursor.fetchone()
+            if count[0] > 0:
                 return -1
             await cursor.execute(
                 f'''
@@ -1617,11 +1610,11 @@ async def update_currency(discord_id: int, new_field, find_by=0):
                 SET
                     {column_name} = ?
                 WHERE
-                    id = ?
+                    guild_id = ?
                 ''',
                 (
                     new_field,
-                    currency_id[0]
+                    guild_id
                 )
             )
             await db.commit()

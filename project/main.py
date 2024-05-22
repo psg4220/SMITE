@@ -883,17 +883,18 @@ async def edit_currency_command(inter: discord.Interaction, to_change: app_comma
                     "> ### Invalid Choice."
                 )
                 return
-        result = await Currency.update_currency(inter.user.id,
+        result = await Currency.update_currency(inter.guild_id,
                                                 _input,
                                                 find_by)
         if result == -1:
             await inter.followup.send(
-                "> ### The currency does not exist or it is taken."
+                "> ### Your currency does not exist or it is taken."
             )
             return
-        await inter.followup.send(
-            "> ## Your currency has been edited."
-        )
+        else:
+            await inter.followup.send(
+                "> ## Your currency has been edited."
+            )
     except Exception as e:
         await inter.followup.send(e)
 
