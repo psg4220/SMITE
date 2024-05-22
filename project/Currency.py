@@ -8,8 +8,8 @@ import aiofiles
 import Account
 import Trading
 import WireTransfer
-import InputFormatter
 from Account import AccountNumber
+
 from Trading import Trade
 
 
@@ -37,8 +37,8 @@ async def create_tables():
             '''
             CREATE TABLE IF NOT EXISTS currencies(
             id INTEGER PRIMARY KEY,
-            name VARCHAR(50) NOT NULL,
-            ticker VARCHAR(4) NOT NULL CHECK(ticker GLOB '[A-Z]*'),
+            name VARCHAR(50) UNIQUE NOT NULL,
+            ticker VARCHAR(4) UNIQUE NOT NULL CHECK(ticker GLOB '[A-Z]*'),
             guild_id INT
             )
             '''
@@ -270,7 +270,7 @@ async def set_currency_guild_id(discord_id: int, guild_id: int):
                 '''
                 UPDATE
                     currencies
-                SET
+                SET 
                     guild_id = ?
                 WHERE
                     id = ?
@@ -1550,7 +1550,7 @@ async def get_provider_auth(guild_id: int, provider: WireTransfer.Provider):
         await db.close()
 
 
-async def get_currencies(limit=10,page=1, show_last=False):
+async def get_currencies(limit=10, page=1, show_last=False):
     db = await get_connection()
     try:
         async with db.cursor() as cursor:
@@ -1563,7 +1563,7 @@ async def get_currencies(limit=10,page=1, show_last=False):
                 ORDER BY 
                     id {"DESC" if show_last else "ASC"} 
                 LIMIT {limit} 
-                OFFSET {(page-1) * limit}
+                OFFSET {(page - 1) * limit}
                 '''
             )
             currencies = await cursor.fetchall()
@@ -1577,28 +1577,51 @@ async def get_currencies(limit=10,page=1, show_last=False):
         await db.close()
 
 
-async def update_currency(guild_id: int, new_name: str, new_ticker: str):
+async def update_currency(discord_id: int, new_field, find_by=0):
     db = await get_connection()
     try:
         async with db.cursor() as cursor:
-            if await is_currency_exist(new_ticker, InputType.TICKER.value)\
-                    or await is_currency_exist(new_name, InputType.CURRENCY_NAME.value):
+            match find_by:
+                case InputType.CURRENCY_NAME.value:
+                    column_name = "name"
+                case InputType.TICKER.value:
+                    column_name = "ticker"
+                case _:
+                    return -1
+            await cursor.execute(
+                '''
+                SELECT
+                    c.id
+                FROM
+                    currencies AS c
+                INNER JOIN
+                    transactions AS t
+                INNER JOIN
+                    balance AS b
+                ON
+                    t.balance_sender_id = b.id
+                    AND t.balance_receiver_id = b.id
+                    AND b.currency_id = c.id
+                WHERE
+                    user_discord_id = ?
+                ''',
+                (discord_id,)
+            )
+            currency_id = await cursor.fetchone()
+            if currency_id is None:
                 return -1
-            new_ticker = new_ticker.upper()
             await cursor.execute(
                 f'''
                 UPDATE
                     currencies
                 SET
-                    name = ?,
-                    ticker = ?
+                    {column_name} = ?
                 WHERE
-                    guild_id = ?
+                    id = ?
                 ''',
                 (
-                    new_name,
-                    new_ticker,
-                    guild_id
+                    new_field,
+                    currency_id[0]
                 )
             )
             await db.commit()
@@ -1643,7 +1666,7 @@ async def trade_list(base_currency_ticker: str,
                     quote_currency_ticker,
                     trade_type,
                     limit,
-                    page-1 * limit
+                    page - 1 * limit
                 )
             )
             trades = await cursor.fetchall()

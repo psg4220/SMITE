@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 import os
 
@@ -852,8 +853,14 @@ async def currencies_command(inter: discord.Interaction, order: app_commands.Cho
         await inter.followup.send(e)
 
 
-@bot.tree.command(name="edit_currency", description="Debug")
-async def edit_currency_command(inter: discord.Interaction, new_name: str, new_ticker: str):
+@bot.tree.command(name="edit_currency", description="Edits your currency")
+@app_commands.choices(
+    to_change=[
+        app_commands.Choice(name="NAME", value="NAME"),
+        app_commands.Choice(name="TICKER", value="TICKER"),
+    ]
+)
+async def edit_currency_command(inter: discord.Interaction, to_change: app_commands.Choice[str], _input: str):
     try:
         await inter.response.defer(ephemeral=True)
         if is_dm(inter):
@@ -866,10 +873,22 @@ async def edit_currency_command(inter: discord.Interaction, new_name: str, new_t
                 "> ### You do not have the permission to use this command."
             )
             return
-        result = await Currency.update_currency(inter.guild_id, new_name, new_ticker)
+        match to_change.value:
+            case "TICKER":
+                find_by = Currency.InputType.TICKER.value
+            case "NAME":
+                find_by = Currency.InputType.CURRENCY_NAME.value
+            case _:
+                await inter.followup.send(
+                    "> ### Invalid Choice."
+                )
+                return
+        result = await Currency.update_currency(inter.user.id,
+                                                _input,
+                                                find_by)
         if result == -1:
             await inter.followup.send(
-                "> ### Currency name or ticker already exist."
+                "> ### The currency does not exist or it is taken."
             )
             return
         await inter.followup.send(
