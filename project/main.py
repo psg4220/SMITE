@@ -844,6 +844,9 @@ async def currencies_command(inter: discord.Interaction, order: app_commands.Cho
         currencies_display = "> `Currencies List`\n"
         for c in currencies:
             currencies_display += f"> `{c[0]} | {c[1]}`\n"
+        currencies_display += f"> `==========`\n" \
+                              f"> `PAGE {page}`\n" \
+                              f"> `==========`"
         await inter.followup.send(currencies_display)
     except Exception as e:
         await inter.followup.send(e)
@@ -879,10 +882,10 @@ async def edit_currency_command(inter: discord.Interaction, new_name: str, new_t
     ]
 )
 async def trade_list_command(inter: discord.Interaction,
-               base_ticker: str,
-               quote_ticker: str,
-               trade_type: app_commands.Choice[str],
-               page: int = 1):
+                             base_ticker: str,
+                             quote_ticker: str,
+                             trade_type: app_commands.Choice[str],
+                             page: int = 1):
     try:
         await inter.response.defer(ephemeral=True)
         base_ticker, quote_ticker = base_ticker.upper(), quote_ticker.upper()
@@ -900,7 +903,8 @@ async def trade_list_command(inter: discord.Interaction,
                           f"> `{t[4]} {base_ticker}`\n" \
                           f"> `For the price of {t[3]} {quote_ticker}`\n"
         trade_list += f"> `==========`\n" \
-                      f"> PAGE {page}"
+                      f"> PAGE {page}\n" \
+                      f"> `==========`"
         await inter.followup.send(trade_list)
     except Exception as e:
         await inter.followup.send(e)
