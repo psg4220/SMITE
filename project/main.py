@@ -885,6 +885,7 @@ async def trade_list_command(inter: discord.Interaction,
                page: int = 1):
     try:
         await inter.response.defer(ephemeral=True)
+        base_ticker, quote_ticker = base_ticker.upper(), quote_ticker.upper()
         trades = await Currency.trade_list(base_ticker, quote_ticker, trade_type.value, page)
         if trades == -1:
             await inter.followup.send(
@@ -898,6 +899,8 @@ async def trade_list_command(inter: discord.Interaction,
                           f"> `Wants to {trade_type.value}`\n" \
                           f"> `{t[4]} {base_ticker}`\n" \
                           f"> `For the price of {t[3]} {quote_ticker}`\n"
+        trade_list += f"> `==========`\n" \
+                      f"> PAGE {page}"
         await inter.followup.send(trade_list)
     except Exception as e:
         await inter.followup.send(e)
