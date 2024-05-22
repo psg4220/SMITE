@@ -866,7 +866,12 @@ async def edit_currency_command(inter: discord.Interaction, new_name: str, new_t
                 "> ### You do not have the permission to use this command."
             )
             return
-        await Currency.update_currency(inter.guild_id, new_name, new_ticker)
+        result = await Currency.update_currency(inter.guild_id, new_name, new_ticker)
+        if result == -1:
+            await inter.followup.send(
+                "> ### Currency name or ticker already exist."
+            )
+            return
         await inter.followup.send(
             "> ## Your currency has been edited."
         )

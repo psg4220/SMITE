@@ -1581,6 +1581,9 @@ async def update_currency(guild_id: int, new_name: str, new_ticker: str):
     db = await get_connection()
     try:
         async with db.cursor() as cursor:
+            if await is_currency_exist(new_ticker, InputType.TICKER.value)\
+                    or await is_currency_exist(new_name, InputType.CURRENCY_NAME.value):
+                return -1
             new_ticker = new_ticker.upper()
             await cursor.execute(
                 f'''
