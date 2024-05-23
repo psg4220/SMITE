@@ -79,6 +79,13 @@ async def create_currency(inter: discord.Interaction, name: str, ticker: str, in
                 f'> `Tickers should be 3 or 4 letters long`'
             )
             return
+        if InputFormatter.is_ticker_blacklisted(ticker):
+            await inter.followup.send(
+                f'> ## ⛔ Failed to create a currency\n'
+                f'> ⚠️ Your ticker was found in a blacklist.\n'
+                f'> Make sure your ticker does not exist yet anywhere'
+            )
+            return
         if not InputFormatter.validate_decimal_places(initial_supply):
             await inter.followup.send(
                 f'> ## ⛔ Failed to create a currency\n'
@@ -511,8 +518,8 @@ async def trade_command(inter: discord.Interaction,
                         trade_type: app_commands.Choice[str],
                         base_ticker: str,
                         quote_ticker: str,
-                        price: str,
-                        amount: str):
+                        price: float,
+                        amount: float):
     try:
         await inter.response.defer(ephemeral=True)
         # if not is_dm(inter):
@@ -520,14 +527,30 @@ async def trade_command(inter: discord.Interaction,
         #         "** You cannot use this bot in a server, DM me instead. **"
         #     )
         #     return
+        if price < 0.0001 or price > 999_999_999_999_999\
+                or amount < 0.0001 or amount > 999_999_999_999_999:
+            await inter.followup.send(
+                f'> ⚠️ Initial supply should be less than 999,999,999,999,999 or greater than 0.0001.'
+            )
+            return
+        if not InputFormatter.validate_decimal_places(price) or not InputFormatter.validate_decimal_places(amount):
+            f'> ⚠️ Maximum of 4 decimal places only.'
+            return
+        bid_ask = await Currency.get_bid_ask_price(base_ticker, quote_ticker)
+        spread_limit = 1000
+        if abs(bid_ask[0] - price) > spread_limit or abs(bid_ask[1] - price) > spread_limit:
+            await inter.followup.send(
+                "> ### Spread limit reached"
+            )
+            return
         match trade_type.value:
-            case 'buy' | 'b':
+            case 'b':
                 trade_type = Trading.TradeType.BUY
-            case 'sell' | 's':
+            case 's':
                 trade_type = Trading.TradeType.SELL
             case _:
                 await inter.followup.send(
-                    f"> ### Invalid trade type"
+                    f"> ### Spread limit reached"
                 )
                 return
         trade = Trade(
@@ -559,7 +582,7 @@ async def trade_command(inter: discord.Interaction,
             )
         elif result[0] == 0:
             await inter.followup.send(
-                f"> ### ✅Bought currency"
+                f"> ### ✅{'Bought' if result[2] else 'Sold'} {trade.base_ticker} for {trade.price} {trade.quote_ticker}"
             )
             if result[3]:
                 receiver = await bot.fetch_user(result[1])
@@ -876,6 +899,13 @@ async def edit_currency_command(inter: discord.Interaction, to_change: app_comma
         match to_change.value:
             case "TICKER":
                 find_by = Currency.InputType.TICKER.value
+                if InputFormatter.is_ticker_blacklisted(_input):
+                    await inter.followup.send(
+                        f'> ## ⛔ Failed to edit your currency\n'
+                        f'> ⚠️ Your ticker was found in a blacklist.\n'
+                        f'> Make sure your ticker does not exist yet anywhere'
+                    )
+                    return
             case "NAME":
                 find_by = Currency.InputType.CURRENCY_NAME.value
             case _:

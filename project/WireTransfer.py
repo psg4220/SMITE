@@ -38,7 +38,6 @@ class BoatTransfer:
             status_code = self.economy.update_balance(cash=0, bank=-amount if action == Action.WITHDRAW else amount)[1]
             if status_code >= 400:
                 return -3
-
             # SMITE account credited
             if currency_id is None:
                 return -2

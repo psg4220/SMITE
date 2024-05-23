@@ -1,7 +1,4 @@
-# Importing the Decimal class from the decimal module
-import sys
-import pickle
-from decimal import Decimal, getcontext
+import json
 
 
 def validate_decimal_places(number):
@@ -34,3 +31,12 @@ def is_valid_ticker(ticker: str):
     if ticker_length < 3 or ticker_length > 4:
         return False
     return True
+
+
+def is_ticker_blacklisted(ticker: str):
+    with open("project/blacklisted_tickers.json", "r") as f:
+        tickers = json.load(f)['tickers']
+        for t in tickers:
+            if t == ticker.upper():
+                return True
+    return False
