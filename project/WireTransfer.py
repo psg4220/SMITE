@@ -21,32 +21,46 @@ class BoatTransfer:
 
     async def transfer(self, amount: int, action: Action):
         try:
-            # Unbelievaboat account debited
+            # Retrieve Unbelievaboat balance
             balance = self.economy.get_balance()
             status_code = balance[1]
             if status_code >= 400:
                 return -3
+
             boat_bank_balance = balance[0]["bank"]
+
+            # Retrieve SMITE balance
             currency_id = await Currency.get_currency_id(self.economy.guild_id, Currency.InputType.GUILD_ID.value)
             currency_ticker = await Currency.get_currency_ticker(currency_id, Currency.InputType.CURRENCY_ID.value)
-            smite_balance = await Currency.view_balance(self.economy.user_id,
-                                                        currency_ticker,
-                                                        Currency.InputType.TICKER.value
-                                                        )
-            if (smite_balance - amount) < 0 and action == Action.DEPOSIT:
+            smite_balance = await Currency.view_balance(
+                self.economy.user_id,
+                currency_ticker,
+                Currency.InputType.TICKER.value
+            )
+            # Check if there are sufficient funds for the action
+            if action == Action.DEPOSIT and (smite_balance - amount) < 0:
                 return -1
-            status_code = self.economy.update_balance(cash=0, bank=-amount if action == Action.WITHDRAW else amount)[1]
+            if action == Action.WITHDRAW and (boat_bank_balance - amount) < 0:
+                return -1
+
+            # Update Unbelievaboat balance
+            new_balance = -amount if action == Action.WITHDRAW else amount
+            status_code = self.economy.update_balance(cash=0, bank=new_balance)[1]
             if status_code >= 400:
                 return -3
-            # SMITE account credited
+
+            # Update SMITE balance
             if currency_id is None:
                 return -2
-            if (boat_bank_balance - amount) < 0 and action == Action.WITHDRAW:
-                return -1
-            await Currency.edit_balance(self.economy.user_id,
-                                        currency_id,
-                                        amount,
-                                        is_subtract=False if action == Action.WITHDRAW else True)
+
+            await Currency.edit_balance(
+                self.economy.user_id,
+                currency_id,
+                amount,
+                is_subtract=(action == Action.DEPOSIT)
+            )
+
             return 0
         except Exception as e:
             raise e
+
