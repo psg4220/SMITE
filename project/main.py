@@ -45,7 +45,7 @@ def is_dm(inter: discord.Interaction):
 @bot.event
 async def on_ready():
     await Currency.create_tables()
-    print(f'We have logged in as {bot.user}')
+    print(f'We have logged in as {bot.user}', datetime.datetime.now())
     try:
         synced = await bot.tree.sync()
     except Exception as e:
