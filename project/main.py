@@ -66,9 +66,9 @@ async def create_currency(inter: discord.Interaction, name: str, ticker: str, in
                 "** Use this command in your server. **"
             )
             return
-        if inter.guild.owner_id != inter.user.id:
+        if not inter.user.guild_permissions.administrator:
             await inter.followup.send(
-                "** You must be an admin to create a currency at this guild. **"
+                "** You must be the admin of the server to create a currency. **"
             )
             return
         if not InputFormatter.is_valid_ticker(ticker):
@@ -891,7 +891,7 @@ async def edit_currency_command(inter: discord.Interaction, to_change: app_comma
                 "> ### Execute this command in your server."
             )
             return
-        if inter.guild.owner_id != inter.user.id:
+        if not inter.user.guild_permissions.administrator:
             await inter.followup.send(
                 "> ### You do not have the permission to use this command."
             )
