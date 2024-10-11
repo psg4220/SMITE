@@ -1262,7 +1262,7 @@ async def is_authorized_user(discord_id: int, guild_id: int):
         await db.close()
 
 
-async def create_provider_auth(discord_id: int, guild_id: int, provider: WireTransfer.Provider, auth_token: str):
+async def create_provider_auth(discord_id: int, guild_id: int, provider, auth_token: str):
     db = await get_connection()
     try:
         async with db.cursor() as cursor:
@@ -1300,7 +1300,7 @@ async def create_provider_auth(discord_id: int, guild_id: int, provider: WireTra
         await db.close()
 
 
-async def set_provider_auth(discord_id: int, guild_id: int, provider: WireTransfer.Provider, auth_token: str):
+async def set_provider_auth(discord_id: int, guild_id: int, provider, auth_token: str):
     db = await get_connection()
     try:
         async with db.cursor() as cursor:
@@ -1333,7 +1333,7 @@ async def set_provider_auth(discord_id: int, guild_id: int, provider: WireTransf
         await db.close()
 
 
-async def delete_provider_auth(guild_id: int, provider: WireTransfer.Provider):
+async def delete_provider_auth(guild_id: int):
     db = await get_connection()
     try:
         async with db.cursor() as cursor:
@@ -1354,7 +1354,7 @@ async def delete_provider_auth(guild_id: int, provider: WireTransfer.Provider):
         await db.close()
 
 
-async def get_provider_auth(guild_id: int, provider: WireTransfer.Provider):
+async def get_provider_auth(guild_id: int, provider):
     db = await get_connection()
     try:
         async with db.cursor() as cursor:

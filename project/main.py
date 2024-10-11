@@ -8,6 +8,7 @@ from discord.ext import commands
 import json
 import logging
 
+import database
 import Account
 import Currency
 import InputFormatter
@@ -44,8 +45,8 @@ def is_dm(inter: discord.Interaction):
 
 @bot.event
 async def on_ready():
-    await Currency.create_tables()
-    print(f'We have logged in as {bot.user}', datetime.datetime.now())
+    await database.create_tables()
+    print(f'We have logged in as {bot.user} | {datetime.datetime.now().strftime("%b %e, %Y%l:%M:%S %p")}')
     try:
         synced = await bot.tree.sync()
     except Exception as e:
