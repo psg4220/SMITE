@@ -954,6 +954,7 @@ async def trade_list_command(inter: discord.Interaction,
         for t in trades:
             trade_list += f"> `==========`\n" \
                           f"> `Trade No. {t[0]}`\n" \
+                          f"> `{base_ticker}/{quote_ticker}`" \
                           f"> `Wants to {trade_type.value}`\n" \
                           f"> `{t[4]} {base_ticker}`\n" \
                           f"> `For the price of {t[3]} {quote_ticker}`\n"
