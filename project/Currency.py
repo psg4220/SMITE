@@ -12,6 +12,22 @@ from Account import AccountNumber
 from Trading import Trade
 
 
+class InputType(enum.Enum):
+    CURRENCY_NAME = 0
+    ACCOUNT_ID = 1
+    TICKER = 2
+    GUILD_ID = 3
+    CURRENCY_ID = 4
+
+
+async def get_connection():
+    try:
+        async with aiofiles.open('properties.json', 'r') as f:
+            return await aiosqlite.connect(json.loads(await f.read())['SQLITE_PATH'])
+    except Exception as e:
+        raise e
+
+
 async def create_currency(discord_id: int, guild_id: int, name: str, ticker: str, initial_balance: float):
     db = await get_connection()
     try:

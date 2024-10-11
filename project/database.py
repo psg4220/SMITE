@@ -2,22 +2,7 @@ import enum
 import aiosqlite
 import aiofiles
 import json
-
-
-class InputType(enum.Enum):
-    CURRENCY_NAME = 0
-    ACCOUNT_ID = 1
-    TICKER = 2
-    GUILD_ID = 3
-    CURRENCY_ID = 4
-
-
-async def get_connection():
-    try:
-        async with aiofiles.open('properties.json', 'r') as f:
-            return await aiosqlite.connect(json.loads(await f.read())['SQLITE_PATH'])
-    except Exception as e:
-        raise e
+from Currency import get_connection
 
 
 async def create_tables():
