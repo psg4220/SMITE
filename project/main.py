@@ -8,6 +8,7 @@ from discord.ext import commands
 import json
 import logging
 
+import Bank
 import database
 import Account
 import Currency
@@ -539,7 +540,7 @@ async def trade_command(inter: discord.Interaction,
             return
         bid_ask = await Currency.get_bid_ask_price(base_ticker, quote_ticker)
         spread_limit = 1000
-        if abs(bid_ask[0] - price) > spread_limit or abs(bid_ask[1] - price) > spread_limit:
+        if abs((bid_ask[0] if bid_ask[0] is not None else 0) - price) > spread_limit or abs((bid_ask[1] if bid_ask[1] is not None else 0) - price) > spread_limit:
             await inter.followup.send(
                 "> ### Spread limit reached"
             )
@@ -963,6 +964,27 @@ async def trade_list_command(inter: discord.Interaction,
                       f"> `PAGE {page}\n" \
                       f"> `==========`"
         await inter.followup.send(trade_list)
+    except Exception as e:
+        await inter.followup.send(e)
+
+
+# @bot.tree.command(name="create_bank", description="Creates a bank in your micronation.")
+# async def create_bank(inter: discord.Interaction, name: str, currency_ticker: str):
+#     try:
+#         await inter.response.defer()
+#         if is_dm(inter):
+#             await inter.followup.send(
+#                 "** Use this command in a server. **"
+#             )
+#             return
+#         if not inter.user.guild_permissions.administrator:
+#             embed = discord.Embed(title="Invalid Permissions", description="You need to be admin to create a bank.",
+#                                   color=0xff0000)
+#             await inter.followup.send(embed=embed)
+#             return
+#
+#         await Bank.create_bank(inter.user.id, name, currency_ticker)
+
     except Exception as e:
         await inter.followup.send(e)
 
