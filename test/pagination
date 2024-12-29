@@ -1,0 +1,21 @@
+@group.command(name="something", description="desc something")
+async def something(self, interaction: discord.Interaction) -> None:
+    async def get_page(index):
+        # Simulate fetching an embed and total pages
+        embed = discord.Embed(
+            title=f"Page {index}",
+            description=f"This is the content of page {index}.",
+            color=discord.Color.blue()
+        )
+        total_pages = 5  # Simulate 5 total pages
+        return embed, total_pages
+
+    view = Pagination(interaction=interaction, get_page=get_page)
+    await view.start()
+
+
+Import the pagination.py and class Pagination
+
+
+
+

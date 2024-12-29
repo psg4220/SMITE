@@ -1,0 +1,17 @@
+services:
+  mysql:
+    image: mysql:latest
+    container_name: smite_database
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_DATABASE: smite_db
+      MYSQL_USER: user
+      MYSQL_PASSWORD: secret
+    ports:
+      - "3307:3306"  # Use the default MySQL port mapping
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+volumes:
+  mysql_data:

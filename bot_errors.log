@@ -1,0 +1,143 @@
+2024-12-28 19:11:10,566 - ERROR - Ignoring exception in command 'list'
+Traceback (most recent call last):
+  File "/home/psg420/SMITE_v2/venv/lib/python3.11/site-packages/discord/app_commands/commands.py", line 857, in _do_call
+    return await self._callback(self.binding, interaction, **params)  # type: ignore
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/psg420/SMITE_v2/cogs/transactioncog.py", line 34, in transaction_list
+    await view.transaction_view(interaction)
+  File "/home/psg420/SMITE_v2/views/transactionlistview.py", line 49, in transaction_view
+    transactions = await TransactionService.get_all_transactions(
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: TransactionService.get_all_transactions() missing 1 required positional argument: 'currency_id'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/psg420/SMITE_v2/venv/lib/python3.11/site-packages/discord/app_commands/tree.py", line 1310, in _call
+    await command._invoke_with_namespace(interaction, namespace)
+  File "/home/psg420/SMITE_v2/venv/lib/python3.11/site-packages/discord/app_commands/commands.py", line 883, in _invoke_with_namespace
+    return await self._do_call(interaction, transformed_values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/psg420/SMITE_v2/venv/lib/python3.11/site-packages/discord/app_commands/commands.py", line 872, in _do_call
+    raise CommandInvokeError(self, e) from e
+discord.app_commands.errors.CommandInvokeError: Command 'list' raised an exception: TypeError: TransactionService.get_all_transactions() missing 1 required positional argument: 'currency_id'
+2024-12-28 19:14:58,121 - ERROR - Ignoring exception in command 'list'
+Traceback (most recent call last):
+  File "/home/psg420/SMITE_v2/venv/lib/python3.11/site-packages/discord/app_commands/commands.py", line 857, in _do_call
+    return await self._callback(self.binding, interaction, **params)  # type: ignore
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/psg420/SMITE_v2/cogs/transactioncog.py", line 34, in transaction_list
+    await view.transaction_view(interaction)
+  File "/home/psg420/SMITE_v2/views/transactionlistview.py", line 49, in transaction_view
+    transactions = await TransactionService.get_all_transactions(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/contextlib.py", line 222, in __aexit__
+    await self.gen.athrow(typ, value, traceback)
+  File "/home/psg420/SMITE_v2/db.py", line 37, in get_session
+    yield session
+  File "/home/psg420/SMITE_v2/services/transactionservice.py", line 169, in get_all_transactions
+    .options(selectinload(Transaction.sender), selectinload(Transaction.receiver))  # Eager load the related Account objects
+             ^^^^^^^^^^^^
+NameError: name 'selectinload' is not defined
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/psg420/SMITE_v2/venv/lib/python3.11/site-packages/discord/app_commands/tree.py", line 1310, in _call
+    await command._invoke_with_namespace(interaction, namespace)
+  File "/home/psg420/SMITE_v2/venv/lib/python3.11/site-packages/discord/app_commands/commands.py", line 883, in _invoke_with_namespace
+    return await self._do_call(interaction, transformed_values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/psg420/SMITE_v2/venv/lib/python3.11/site-packages/discord/app_commands/commands.py", line 876, in _do_call
+    raise CommandInvokeError(self, e) from e
+discord.app_commands.errors.CommandInvokeError: Command 'list' raised an exception: NameError: name 'selectinload' is not defined
+2024-12-28 19:15:59,574 - ERROR - Ignoring exception in command 'list'
+Traceback (most recent call last):
+  File "/home/psg420/SMITE_v2/venv/lib/python3.11/site-packages/discord/app_commands/commands.py", line 857, in _do_call
+    return await self._callback(self.binding, interaction, **params)  # type: ignore
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/psg420/SMITE_v2/cogs/transactioncog.py", line 34, in transaction_list
+    await view.transaction_view(interaction)
+  File "/home/psg420/SMITE_v2/views/transactionlistview.py", line 49, in transaction_view
+    transactions = await TransactionService.get_all_transactions(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/contextlib.py", line 222, in __aexit__
+    await self.gen.athrow(typ, value, traceback)
+  File "/home/psg420/SMITE_v2/db.py", line 37, in get_session
+    yield session
+  File "/home/psg420/SMITE_v2/services/transactionservice.py", line 169, in get_all_transactions
+    .options(selectinload(Transaction.sender), selectinload(Transaction.receiver))  # Eager load the related Account objects
+             ^^^^^^^^^^^^
+NameError: name 'selectinload' is not defined
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/psg420/SMITE_v2/venv/lib/python3.11/site-packages/discord/app_commands/tree.py", line 1310, in _call
+    await command._invoke_with_namespace(interaction, namespace)
+  File "/home/psg420/SMITE_v2/venv/lib/python3.11/site-packages/discord/app_commands/commands.py", line 883, in _invoke_with_namespace
+    return await self._do_call(interaction, transformed_values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/psg420/SMITE_v2/venv/lib/python3.11/site-packages/discord/app_commands/commands.py", line 876, in _do_call
+    raise CommandInvokeError(self, e) from e
+discord.app_commands.errors.CommandInvokeError: Command 'list' raised an exception: NameError: name 'selectinload' is not defined
+2024-12-28 19:17:09,006 - ERROR - Ignoring exception in command 'list'
+Traceback (most recent call last):
+  File "/home/psg420/SMITE_v2/venv/lib/python3.11/site-packages/discord/app_commands/commands.py", line 857, in _do_call
+    return await self._callback(self.binding, interaction, **params)  # type: ignore
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/psg420/SMITE_v2/cogs/transactioncog.py", line 34, in transaction_list
+    await view.transaction_view(interaction)
+  File "/home/psg420/SMITE_v2/views/transactionlistview.py", line 49, in transaction_view
+    transactions = await TransactionService.get_all_transactions(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/contextlib.py", line 222, in __aexit__
+    await self.gen.athrow(typ, value, traceback)
+  File "/home/psg420/SMITE_v2/db.py", line 37, in get_session
+    yield session
+  File "/home/psg420/SMITE_v2/services/transactionservice.py", line 166, in get_all_transactions
+    .options(selectinload(Transaction.sender), selectinload(Transaction.receiver))  # Eager load the related Account objects
+             ^^^^^^^^^^^^
+NameError: name 'selectinload' is not defined
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/psg420/SMITE_v2/venv/lib/python3.11/site-packages/discord/app_commands/tree.py", line 1310, in _call
+    await command._invoke_with_namespace(interaction, namespace)
+  File "/home/psg420/SMITE_v2/venv/lib/python3.11/site-packages/discord/app_commands/commands.py", line 883, in _invoke_with_namespace
+    return await self._do_call(interaction, transformed_values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/psg420/SMITE_v2/venv/lib/python3.11/site-packages/discord/app_commands/commands.py", line 876, in _do_call
+    raise CommandInvokeError(self, e) from e
+discord.app_commands.errors.CommandInvokeError: Command 'list' raised an exception: NameError: name 'selectinload' is not defined
+2024-12-28 19:18:36,553 - ERROR - Ignoring exception in command 'list'
+Traceback (most recent call last):
+  File "/home/psg420/SMITE_v2/venv/lib/python3.11/site-packages/discord/app_commands/commands.py", line 857, in _do_call
+    return await self._callback(self.binding, interaction, **params)  # type: ignore
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/psg420/SMITE_v2/cogs/transactioncog.py", line 34, in transaction_list
+    await view.transaction_view(interaction)
+  File "/home/psg420/SMITE_v2/views/transactionlistview.py", line 49, in transaction_view
+    transactions = await TransactionService.get_all_transactions(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/contextlib.py", line 222, in __aexit__
+    await self.gen.athrow(typ, value, traceback)
+  File "/home/psg420/SMITE_v2/db.py", line 37, in get_session
+    yield session
+  File "/home/psg420/SMITE_v2/services/transactionservice.py", line 130, in get_all_transactions
+    .options(selectinload(Transaction.sender), selectinload(Transaction.receiver))  # Eager load the related Account objects
+             ^^^^^^^^^^^^
+NameError: name 'selectinload' is not defined
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/psg420/SMITE_v2/venv/lib/python3.11/site-packages/discord/app_commands/tree.py", line 1310, in _call
+    await command._invoke_with_namespace(interaction, namespace)
+  File "/home/psg420/SMITE_v2/venv/lib/python3.11/site-packages/discord/app_commands/commands.py", line 883, in _invoke_with_namespace
+    return await self._do_call(interaction, transformed_values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/psg420/SMITE_v2/venv/lib/python3.11/site-packages/discord/app_commands/commands.py", line 876, in _do_call
+    raise CommandInvokeError(self, e) from e
+discord.app_commands.errors.CommandInvokeError: Command 'list' raised an exception: NameError: name 'selectinload' is not defined
