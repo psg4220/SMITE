@@ -1,5 +1,8 @@
 import discord
 from discord.ui import View, Button
+
+from services.accountservice import AccountService
+from services.currencyservice import CurrencyService
 from services.transactionservice import TransactionService
 from utilities.embedtable import EmbedTable
 
@@ -40,6 +43,7 @@ class TransactionListView(View):
         """
         Generates and displays a table of transactions for the current page.
         """
+
         # Get the total number of pages for the user based on the transactions available
         self.total_pages = await TransactionService.get_total_pages(
             discord_id=interaction.user.id
@@ -58,13 +62,16 @@ class TransactionListView(View):
             table_message = "No transactions available."
         else:
             # Prepare data for the table
-            transaction_data = [["Date", "Amount", "Sender", "Receiver"]]
+            transaction_data = [["Currency Ticker", "Date", "Amount", "Sender", "Receiver"]]
             for transaction in transactions:
                 sender_account = transaction.sender  # Assuming sender is an Account object
                 receiver_account = transaction.receiver  # Assuming receiver is an Account object
 
+                sender_account = await AccountService.read_account_by_id(transaction.sender_account_id)
+                currency = await CurrencyService.read_currency_by_id(sender_account.currency_id)
                 # Append formatted data to the table
                 transaction_data.append([
+                    str(currency.ticker),
                     transaction.transaction_date.strftime("%Y-%m-%d %H:%M:%S"),  # Format date
                     str(transaction.amount),  # Transaction amount
                     str(sender_account.discord_id),  # Use sender's Discord ID (or another identifier)
@@ -77,7 +84,6 @@ class TransactionListView(View):
 
         # Update the pagination buttons based on the page number
         await self.update_buttons()
-
         # Edit the original message with the newly generated table or the "No transactions" message
         if self.message:  # Ensure the message exists before editing
             await self.message.edit(content=table_message, view=self)
@@ -90,6 +96,8 @@ class TransactionListView(View):
         Navigate to the previous page when the left button is clicked.
         """
         if self.page > 1:
+            # Defer the response to prevent timeout errors
+            await interaction.response.defer()
             self.page -= 1  # Decrease page number
             await self.transaction_view(interaction)  # Re-render the view with updated data
 
@@ -99,6 +107,8 @@ class TransactionListView(View):
         Navigate to the next page when the right button is clicked.
         """
         if self.page < self.total_pages:
+            # Defer the response to prevent timeout errors
+            await interaction.response.defer()
             self.page += 1  # Increase page number
             await self.transaction_view(interaction)  # Re-render the view with updated data
 

@@ -138,7 +138,7 @@ async def display_trade_info(
     bid_price = await TradeService.get_bid_price(base_currency.currency_id, quote_currency.currency_id)
     ask_price = await TradeService.get_ask_price(base_currency.currency_id, quote_currency.currency_id)
 
-    day_percentage = await TradeService.calculate_percentage(base_currency.currency_id,
+    day_percentage = await TradeLogService.calculate_percentage(base_currency.currency_id,
                                                                 quote_currency.currency_id,
                                                                 time_delta=timedelta(days=1))
 

@@ -1,7 +1,8 @@
 from models.transaction import Transaction
+from models.account import Account
 from db import get_session
 from sqlalchemy.future import select
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.orm import selectinload
 
 from services.accountservice import AccountService
@@ -125,35 +126,43 @@ class TransactionService:
             # Determine the sorting order based on the 'recent' flag
             order_by_clause = Transaction.transaction_date.desc() if recent else Transaction.transaction_date.asc()
 
-            # Execute the query to retrieve transactions where the user is either the sender or the receiver
+            # Join with the Account table to filter by discord_id
             result = await session.execute(
                 select(Transaction)
-                .options(selectinload(Transaction.sender), selectinload(Transaction.receiver))  # Eager load the related Account objects
-                .where(
-                    (Transaction.sender_account_id == discord_id) | (Transaction.receiver_account_id == discord_id)
-                )
+                .options(selectinload(Transaction.sender),
+                         selectinload(Transaction.receiver))  # Eager load related Account objects
+                .join(Account, or_(Transaction.sender_account_id == Account.account_id,
+                                   Transaction.receiver_account_id == Account.account_id))
+                .where(Account.discord_id == discord_id)  # Filter by discord_id
                 .order_by(order_by_clause)
                 .offset(offset)
                 .limit(limit)
             )
-            # Return a list of transaction objects (no need to convert scalars as we are returning the full objects)
+
+            # Return the list of transaction objects
             return result.scalars().all()
 
     @staticmethod
-    async def get_total_pages(discord_id: int) -> int:
+    async def get_total_pages(discord_id: int, limit: int = 10) -> int:
         """
-        Get the total number of transactions for a user.
+        Get the total number of pages of transactions for a user.
 
         Args:
             discord_id (int): The Discord ID of the user.
+            limit (int): Number of transactions per page.
 
         Returns:
-            int: Total number of transactions.
+            int: Total number of pages.
         """
         async with get_session() as session:
+            # Join with the Account table to filter by discord_id
             result = await session.execute(
-                select(func.count()).where(
-                    (Transaction.sender_account_id == discord_id) | (Transaction.receiver_account_id == discord_id)
-                )
+                select(func.count(Transaction.uuid))  # Count the total number of transactions
+                .join(Account, or_(Transaction.sender_account_id == Account.account_id,
+                                   Transaction.receiver_account_id == Account.account_id))
+                .where(Account.discord_id == discord_id)  # Filter by discord_id
             )
-            return result.scalar()
+
+            # Calculate total pages
+            total_transactions = result.scalar() or 0
+            return (total_transactions + limit - 1) // limit  # Round up to the next whole page

@@ -62,16 +62,8 @@ async def main():
     #     amount=Decimal(1000)
     # )
     # print(trade)
-    trade = await TradeService.process_trade(
-        discord_id=5678,
-        base_currency_id=7,
-        quote_currency_id=8,
-        trade_type=TradeType.BUY,
-        price=Decimal(1),
-        amount=Decimal(1000)
-    )
-    print(trade)
-
+    res = await TransactionService.get_all_transactions(discord_id=383234542376583168)
+    print(res)
 # Run the async main function
 if __name__ == "__main__":
     asyncio.run(main())

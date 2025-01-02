@@ -12,26 +12,24 @@ class TransactionCog(commands.Cog):
 
     group = app_commands.Group(name="transaction", description="The transaction command")
 
-    # @group.command(name="list", description="View all of your transactions")
-    # async def transaction_list(self, interaction: discord.Interaction) -> None:
-    #     """
-    #     Allows the user to view their transactions with pagination.
-    #     """
-    #     # Defer the response to give time for processing
-    #     await interaction.response.defer()
-    #
-    #     # Initialize the TransactionListView
-    #     view = TransactionListView()
-    #     view.user = interaction.user  # Set the user for interaction checks
-    #
-    #     # Send an initial message and attach the view
-    #     message = await interaction.followup.send("Fetching your transactions...", view=view)
-    #
-    #     # Attach the message to the view for timeout handling
-    #     view.message = message
-    #
-    #     # Load and display the first page of transactions
-    #     await view.transaction_view(interaction)
+    @group.command(name="list", description="View all of your transactions")
+    async def transaction_list(self, interaction: discord.Interaction) -> None:
+        """
+        Allows the user to view their transactions with pagination.
+        """
+        await interaction.response.defer(ephemeral=False)
+        # Initialize the TransactionListView
+        view = TransactionListView()
+        view.user = interaction.user  # Set the user for interaction checks
+
+        # Send an initial message and attach the view
+        message = await interaction.followup.send("Fetching your transactions...", view=view)
+
+        # Attach the message to the view for timeout handling
+        view.message = message
+
+        # Load and display the first page of transactions
+        await view.transaction_view(interaction)
 
 
     # @group.command(name="info", description="Views the currency's information")
