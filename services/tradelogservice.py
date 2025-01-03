@@ -1,10 +1,14 @@
 from sqlalchemy.future import select
+from sqlalchemy.sql.expression import distinct
 from sqlalchemy import func
+from sqlalchemy.orm import aliased
 from sqlalchemy.exc import NoResultFound
 from models import TradeList, TradeLog
 from db import get_session
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
+from models.currency import Currency
+from math import ceil
 import numpy as np
 
 
@@ -184,3 +188,74 @@ class TradeLogService:
                 await session.commit()
                 return True
             return False
+
+    @staticmethod
+    async def get_trade_log_list_with_price(page: int = 1, limit: int = 10):
+        """
+        Retrieves distinct base and quote currency pairs with their most recent price, and supports pagination.
+
+        Args:
+            page (int): The page number to retrieve.
+            limit (int): The number of items per page.
+
+        Returns:
+            Tuple[List[Tuple[str, str, Decimal]], int]: A tuple containing:
+                                                        - List of tuples with (base_ticker, quote_ticker, price)
+                                                        - Total number of pages
+        """
+        async with get_session() as session:
+            # Subquery to get the most recent trade date for each currency pair
+            subquery = (
+                select(
+                    TradeLog.base_currency_id,
+                    TradeLog.quote_currency_id,
+                    func.max(TradeLog.date_traded).label("max_date")
+                )
+                .group_by(TradeLog.base_currency_id, TradeLog.quote_currency_id)
+                .subquery()
+            )
+
+            # Aliases for the currency table
+            base_currency_alias = aliased(Currency)
+            quote_currency_alias = aliased(Currency)
+
+            # Alias the trade log table for the join
+            trade_log_alias = aliased(TradeLog)
+
+            # Main query to fetch distinct currency pairs with their tickers and the most recent price
+            query = (
+                select(
+                    base_currency_alias.ticker.label("base_ticker"),
+                    quote_currency_alias.ticker.label("quote_ticker"),
+                    trade_log_alias.price
+                )
+                .select_from(subquery)  # Start explicitly from the subquery
+                .join(
+                    trade_log_alias,
+                    (trade_log_alias.base_currency_id == subquery.c.base_currency_id)
+                    & (trade_log_alias.quote_currency_id == subquery.c.quote_currency_id)
+                    & (trade_log_alias.date_traded == subquery.c.max_date)
+                )
+                .join(
+                    base_currency_alias,
+                    trade_log_alias.base_currency_id == base_currency_alias.currency_id
+                )
+                .join(
+                    quote_currency_alias,
+                    trade_log_alias.quote_currency_id == quote_currency_alias.currency_id
+                )
+            )
+
+            # Count total distinct records
+            count_query = select(func.count()).select_from(subquery)
+            total_records = (await session.execute(count_query)).scalar()
+            total_pages = ceil(total_records / limit)
+
+            # Apply pagination using limit and offset
+            paginated_query = query.limit(limit).offset((page - 1) * limit)
+
+            # Execute the paginated query
+            result = await session.execute(paginated_query)
+            records = result.all()
+
+            return records, total_pages

@@ -11,6 +11,7 @@ from modals.mintmodal import MintModal
 from modals.burnmodal import BurnModal
 from models.trade import TradeStatus, TradeType
 from views.tradelimitview import TradeLimitView, display_trade_info
+from views.tradelogview import TradeLogView
 from plotting.chartplotter import ChartPlotter
 from services.tradelogservice import TradeLogService
 from services.currencyservice import CurrencyService
@@ -153,6 +154,23 @@ class TradeCog(commands.Cog):
         # Link the view to the message and display the first page
         view.message = message
         await view.trade_view(interaction)
+
+    @group.command(name="board", description="View trading pairs")
+    async def trade_board(self, interaction: discord.Interaction):
+        """
+        Allows the user to view paginated trade logs.
+        """
+        await interaction.response.defer(ephemeral=False)
+        # Initialize the view and set the user
+        view = TradeLogView()
+        view.user = interaction.user
+
+        # Send an initial message
+        message = await interaction.followup.send("Fetching trade logs...", view=view)
+        view.message = message  # Attach the message to the view
+
+        # Load and display the first page
+        await view.trade_log_view(interaction)
 
 
 async def setup(bot: commands.Bot) -> None:
