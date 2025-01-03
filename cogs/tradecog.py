@@ -132,48 +132,27 @@ class TradeCog(commands.Cog):
     #         # button here
     #     await interaction.response.defer(ephemeral=True)
 
-    @group.command(name="active", description="Views your active trades")
+    @group.command(name="active", description="View your active trades")
     @app_commands.choices(trade_type=[
         app_commands.Choice(name="BUY", value=0),
         app_commands.Choice(name="SELL", value=1),
     ])
     async def active_trades(self, interaction: discord.Interaction, trade_type: int = None):
-        await interaction.response.defer(ephemeral=False)  # Defer the response to allow time for processing
-        if trade_type == 0:
-            trade_type = TradeType.BUY
-        elif trade_type == 1:
-            trade_type = TradeType.SELL
-        # Initialize the ActiveTradeView and set the user
-        view = ActiveTradeView(trade_type=trade_type)
-        view.user = interaction.user  # Ensure only the calling user can interact with the view
+        """
+        Displays active trades for the user with pagination.
+        """
+        await interaction.response.defer(ephemeral=False)
 
-        # Fetch initial trades for the first page
-        trades = await TradeService.get_all_trades(
-            discord_id=interaction.user.id,
-            trade_type=trade_type,
-            status=TradeStatus.OPEN,
-            page=view.page
-        )
+        view = ActiveTradeView()
+        view.user = interaction.user
+        view.trade_type = TradeType.BUY if trade_type == 0 else TradeType.SELL
 
-        # Convert trade data into a 2D array for the table
-        trade_data = [["Trade ID", "Ticker Pair", "Type", "Price", "Quantity"]]
-        for trade in trades:
-            base_currency = await CurrencyService.read_currency_by_id(trade.base_currency_id)
-            quote_currency = await CurrencyService.read_currency_by_id(trade.quote_currency_id)
-            trade_data.append(
-                [str(trade.trade_id), f"{base_currency.ticker.upper()}/{quote_currency.ticker.upper()}", str(trade.type.value),
-                 str(trade.price_offered), str(trade.amount)]
-            )
+        # Send initial message with placeholder content
+        message = await interaction.followup.send("Loading active trades...", view=view)
 
-        # Generate the table using EmbedTable
-        table = EmbedTable(trade_data)
-        table_message = table.generate_table()
-
-        # Send the initial message with the view attached
-        message = await interaction.followup.send(content=table_message, view=view)
-
-        # Link the message to the view for timeout handling
+        # Link the view to the message and display the first page
         view.message = message
+        await view.trade_view(interaction)
 
 
 async def setup(bot: commands.Bot) -> None:
