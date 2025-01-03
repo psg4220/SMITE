@@ -6,6 +6,8 @@ import os
 import sys
 from dotenv import load_dotenv
 
+from create_tables import create_tables
+
 # Set up logging to file
 logging.basicConfig(
     filename="bot_errors.log",  # Log to a file named "bot_errors.log"
@@ -62,6 +64,7 @@ async def load_cogs():
 
 # Run the bot
 async def main():
+    await create_tables()
     async with bot:
         await load_cogs()
         await bot.start(TOKEN)
