@@ -44,7 +44,7 @@ class TransferModal(discord.ui.Modal, title="Transfer funds"):
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
-        receiver_account = await AccountService.get_account(user.id, currency.currency_id)
+        receiver_account = await AccountService.get_account(account_discord_id, currency.currency_id)
 
         if not receiver_account:
             embed = discord.Embed(
@@ -76,14 +76,17 @@ class TransferModal(discord.ui.Modal, title="Transfer funds"):
         )
 
         if isinstance(transfer_result, Transaction):
-            embed = discord.Embed(
-                title="TRANSFER RECEIVED",
-                description=f"You received **{transfer_result.amount} {account_ticker.upper()}** to **{account_ticker.upper()}-{interaction.user.id}**.\n"
-                            f"Transaction Receipt: `{transfer_result.uuid}`",
-                color=0x00ff00
-            )
-            user_receiver = await interaction.client.fetch_user(account_discord_id)
-            await user_receiver.send(embed=embed)
+            try:
+                embed = discord.Embed(
+                    title="TRANSFER RECEIVED",
+                    description=f"You received **{transfer_result.amount} {account_ticker.upper()}** to **{account_ticker.upper()}-{interaction.user.id}**.\n"
+                                f"Transaction Receipt: `{transfer_result.uuid}`",
+                    color=0x00ff00
+                )
+                user_receiver = await interaction.client.fetch_user(account_discord_id)
+                await user_receiver.send(embed=embed)
+            except Exception:
+                pass
             embed = discord.Embed(
                 title="TRANSFER COMPLETE",
                 description=f"You have transferred **{transfer_result.amount} {account_ticker.upper()}** to **{account_number}**.\n"

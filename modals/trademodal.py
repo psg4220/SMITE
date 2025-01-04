@@ -94,7 +94,15 @@ class TradeModal(discord.ui.Modal, title="Create a trade"):
                 title="INSUFFICIENT FUNDS",
                 description="You do not have enough funds\n"
                             f"Total {total}",
-                color=0x00ff00,
+                color=0xff0000,
+            )
+            await interaction.followup.send(embed=embed, ephemeral=True)
+            return
+        elif result == 4:
+            embed = discord.Embed(
+                title="ACCOUNT DISABLED",
+                description="Either you or the other parties account is disabled",
+                color=0xff0000,
             )
             await interaction.followup.send(embed=embed, ephemeral=True)
             return

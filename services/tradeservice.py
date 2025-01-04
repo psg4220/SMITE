@@ -437,6 +437,7 @@ class TradeService:
                   1 - Trade fully fulfilled,
                   2 - Trade partially fulfilled and listed,
                   3 - Insufficient balance.
+                  4 - Accounts are disabled
         """
         opposite_trade_type = TradeType.BUY if trade_type == TradeType.SELL else TradeType.SELL
         remaining_amount = Decimal(amount)
@@ -465,6 +466,10 @@ class TradeService:
                 session.add(trader_quote_account)
 
             await session.commit()
+
+            # Check if accounts are disabled:
+            if trader_base_account.is_disabled or trader_quote_account.is_disabled:
+                return 4
 
             # Verify balance before processing
             if trade_type == TradeType.SELL:

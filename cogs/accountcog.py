@@ -44,6 +44,20 @@ class AccountCog(commands.Cog):
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
+        if account.is_disabled:
+            embed = discord.Embed(
+                title="Your account had been DISABLED",
+                description="Your account had been disabled\n"
+                            "**Possible reasons:**\n"
+                            "- Violated the terms and conditions\n"
+                            "- Market manipulation.\n"
+                            "- Negative balance haven't been repaid on your account.\n"
+                            "**Please contact SMITE for an appeal**",
+                color=0xff0000,
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
         role = await RoleService.get_role(interaction.user.id, currency.currency_id)
 
         embed = discord.Embed(title="ACCOUNT INFORMATION", color=0xbababa)

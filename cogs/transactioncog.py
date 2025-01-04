@@ -4,6 +4,9 @@ import discord
 import time
 from discord import app_commands
 from discord.ext import commands
+
+from services.accountservice import AccountService
+from services.currencyservice import CurrencyService
 from services.transactionservice import TransactionService
 from views.transactionlistview import TransactionListView
 
@@ -33,6 +36,22 @@ class TransactionCog(commands.Cog):
         # Load and display the first page of transactions
         await view.transaction_view(interaction)
 
+    @group.command(name="receipt", description="Views your transaction")
+    async def transaction_receipt(self, interaction: discord.Interaction, uuid: str):
+        transaction = await TransactionService.read_transaction_by_uuid(uuid)
+        sender_account = await AccountService.read_account_by_id(transaction.sender_account_id)
+        receiver_account = await AccountService.read_account_by_id(transaction.receiver_account_id)
+        currency = await CurrencyService.read_currency_by_id(sender_account.currency_id)
+        embed = discord.Embed(
+            title="TRANSACTION RECEIPT",
+            description=f"**Currency:** {currency.name} ({currency.ticker})\n"
+                        f"**Amount:** {transaction.amount}\n"
+                        f"**Transaction Date:** {transaction.transaction_date}\n"
+                        f"**Sender:** ||{sender_account.discord_id}||\n"
+                        f"**Receiver:** ||{receiver_account.discord_id}||\n",
+            color=0x808080
+        )
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
     # @group.command(name="info", description="Views the currency's information")
     # async def currency_information(self, interaction: discord.Interaction) -> None:

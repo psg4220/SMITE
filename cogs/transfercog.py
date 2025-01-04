@@ -87,14 +87,17 @@ class TransferCog(commands.GroupCog, group_name="transfer"):
             )
 
             if isinstance(transfer_result, Transaction):
-                embed = discord.Embed(
-                    title="TRANSFER RECEIVED",
-                    description=f"You received **{transfer_result.amount} {ticker.upper()}** to **{user.name}**.\n"
-                                f"Transaction Receipt: `{transfer_result.uuid}`",
-                    color=0x00ff00
-                )
-                user_receiver = await interaction.client.fetch_user(user.id)
-                await user_receiver.send(embed=embed)
+                try:
+                    embed = discord.Embed(
+                        title="TRANSFER RECEIVED",
+                        description=f"You received **{transfer_result.amount} {ticker.upper()}** to **{user.name}**.\n"
+                                    f"Transaction Receipt: `{transfer_result.uuid}`",
+                        color=0x00ff00
+                    )
+                    user_receiver = await interaction.client.fetch_user(user.id)
+                    await user_receiver.send(embed=embed)
+                except Exception:
+                    pass
                 embed = discord.Embed(
                     title="TRANSFER COMPLETE",
                     description=f"You have transferred **{transfer_result.amount} {currency.name}** to **{user.name}**.\n"
