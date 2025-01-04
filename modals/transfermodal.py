@@ -44,8 +44,21 @@ class TransferModal(discord.ui.Modal, title="Transfer funds"):
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
+        receiver_account = await AccountService.get_account(user.id, currency.currency_id)
+
+        if not receiver_account:
+            embed = discord.Embed(
+                title="TRANSFER FAILED",
+                description=f"Receiver's account does not exist for the specified currency",
+                color=0xff0000
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
+        total_balance = receiver_account.balance + Decimal(amount)
+
         # Check max and min amount
-        if not validate_decimal(Decimal(amount)):
+        if not validate_decimal(Decimal(total_balance)):
             embed = discord.Embed(
                 title="Maximum or minimum range exceeded",
                 description="It shall be less than 999,999,999,999,999.99\n"

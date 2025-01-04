@@ -1,3 +1,4 @@
+import datetime
 from typing import Tuple
 
 import discord
@@ -184,4 +185,4 @@ async def setup(bot: commands.Bot) -> None:
 
         # Syncing the slash commands (if needed)
         await bot.tree.sync()
-        print("Slash commands synced!")
+        print(datetime.datetime.now())

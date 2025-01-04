@@ -1,3 +1,5 @@
+import datetime
+
 import discord
 from discord.ext import commands
 from discord import app_commands
@@ -66,4 +68,4 @@ async def setup(bot):
 
         # Syncing the slash commands (if needed)
         await bot.tree.sync()
-        print("Slash commands synced!")
+        print(datetime.datetime.now())

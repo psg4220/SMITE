@@ -1,6 +1,7 @@
 from models.currency import Currency
 from db import get_session
 from sqlalchemy.future import select
+from sqlalchemy.sql import func, desc, asc
 
 
 class CurrencyService:
@@ -136,7 +137,7 @@ class CurrencyService:
                 return False
 
     @staticmethod
-    async def get_all_currencies(page: int = 1, limit: int = 10, is_disabled: bool = False):
+    async def get_all_currencies(page: int = 1, limit: int = 10, is_disabled: bool = False, sort_order: str = "oldest"):
         """
         Retrieves all currencies with pagination from the database.
 
@@ -144,6 +145,7 @@ class CurrencyService:
             page (int, optional): The page number for pagination (default is 1).
             limit (int, optional): The number of currencies per page (default is 10).
             is_disabled (bool, optional): Whether to include disabled currencies (default is False).
+            sort_order (str, optional): The sorting order, either "oldest" or "newest" (default is "oldest").
 
         Returns:
             list: A list of Currency objects for the given page and limit.
@@ -151,10 +153,21 @@ class CurrencyService:
         async with get_session() as session:
             offset = (page - 1) * limit  # Calculate the offset based on page and limit
 
-            # Execute the query with pagination and filter by 'is_disabled'
-            result = await session.execute(
-                select(Currency).filter(Currency.is_disabled == is_disabled)
-                .offset(offset).limit(limit)
-            )
-            return result.scalars().all()
+            # Build the query with pagination and sorting
+            query = select(Currency).filter(Currency.is_disabled == is_disabled).offset(offset).limit(limit)
 
+            # Apply sorting based on the 'sort_order' parameter
+            if sort_order == "newest":
+                query = query.order_by(desc(Currency.currency_id))  # Sort by the newest first
+            else:
+                query = query.order_by(asc(Currency.currency_id))  # Default to oldest (ascending order)
+
+            result = await session.execute(query)
+            currencies = result.scalars().all()
+
+            # Calculate the total number of pages
+            total_count = await session.execute(select(func.count(Currency.currency_id)))
+            total_currencies = total_count.scalar_one()
+            total_pages = (total_currencies + limit - 1) // limit  # Ceiling division
+
+            return currencies, total_pages

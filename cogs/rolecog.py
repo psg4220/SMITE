@@ -1,3 +1,5 @@
+import datetime
+
 import discord
 import time
 from discord import app_commands
@@ -13,6 +15,24 @@ class RoleCog(commands.Cog):
         self.bot = bot
 
     group = app_commands.Group(name="role", description="The role command")
+
+    @group.command(name="help", description="Guide for roles")
+    async def help(self, interaction: discord.Interaction):
+        description = '''
+        The currency is governed by the EXECUTIVE which is the highest role.
+        There can be only 1 EXECUTIVE per currency.
+        
+        ADMIN has the ability to mint or burn currencies
+        
+        BE CAREFUL OF SETTING SOMEONE EXECUTIVE THIS IS TECHNICALLY
+        A TRANSFER OF OWNERSHIP TO SOMEONE.
+        '''
+
+        embed = discord.Embed(
+            title="GUIDE FOR SETTING ROLES",
+            description=description
+        )
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
     @group.command(name="set", description="Sets role to a user")
     @app_commands.choices(role_type=[
@@ -44,6 +64,7 @@ class RoleCog(commands.Cog):
         if user_role.role_number != 1:
             embed = discord.Embed(
                 title="INSUFFICIENT PERMISSIONS",
+                description="You dont have permissions to do this",
                 color=0xff0000
             )
             await interaction.followup.send(embed=embed)
@@ -53,6 +74,9 @@ class RoleCog(commands.Cog):
         if is_executive:
             embed = discord.Embed(
                 title="USER IS ALREADY AN EXECUTIVE",
+                description="The user has already a currency\n"
+                            "or your setting roles to yourself.\n"
+                            "If you want to delete your currency contact SMITE discord server",
                 color=0xff0000
             )
             await interaction.followup.send(embed=embed)
@@ -63,6 +87,7 @@ class RoleCog(commands.Cog):
             await RoleService.create_role(discord_id, currency.currency_id, 1)
             embed = discord.Embed(
                 title="EXECUTIVE ROLE HAS BEEN TRANSFERRED AND IMPLEMENTED",
+                description="The ownership of the currency has been transferred",
                 color=0x00ff00
             )
             await interaction.followup.send(embed=embed)
@@ -106,4 +131,4 @@ async def setup(bot: commands.Bot) -> None:
 
         # Syncing the slash commands (if needed)
         await bot.tree.sync()
-        print("Slash commands synced!")
+        datetime.datetime.now()

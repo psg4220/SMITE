@@ -1,3 +1,5 @@
+import datetime
+
 import discord
 import asyncio
 import logging
@@ -39,15 +41,10 @@ TOKEN = os.getenv("DISCORD_TOKEN")
 # Bot setup
 intents = discord.Intents.default()
 bot = commands.Bot(command_prefix=["!", "?", "&"], intents=intents)
-
-
 # Event: Bot is ready
 @bot.event
 async def on_ready():
     await bot.tree.sync()  # Sync slash commands globally
-    print(f"Bot is online as {bot.user}")
-    print("Slash commands synced!")
-
 
 # Function to dynamically load cogs
 async def load_cogs():

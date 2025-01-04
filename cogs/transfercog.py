@@ -1,3 +1,5 @@
+import datetime
+
 import discord
 import time
 from decimal import Decimal
@@ -10,11 +12,28 @@ from services.currencyservice import CurrencyService
 from modals.transfermodal import TransferModal
 from utilities.tools import validate_decimal
 
-class TransferCog(commands.Cog):
+class TransferCog(commands.GroupCog, group_name="transfer"):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
-    @app_commands.command(name="transfer", description="Send funds to someone")
+    @app_commands.command(name="help", description="Guide for Transfer")
+    async def help(self, interaction: discord.Interaction) -> None:
+        description = """        
+        **/transfer funds <ticker> <user> <amount>**
+        **/transfer funds**
+        
+        Transfers your money into a user. You can just enter `/transfer funds`
+        and input the **account number** of the receiver.
+        
+        """
+
+        embed = discord.Embed(
+            title="GUIDE TO TRANSFER FUNDS",
+            description=description
+        )
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    @app_commands.command(name="funds", description="Transfers funds to someone")
     async def transfer(self, interaction: discord.Interaction,
                        ticker: str = None, user: discord.User = None,
                        amount: str = None) -> None:
@@ -35,13 +54,6 @@ class TransferCog(commands.Cog):
                 await interaction.response.send_message(embed=embed, ephemeral=True)
                 return
 
-            transfer_result = await AccountService.transfer(
-                interaction.user.id,
-                user.id,
-                currency.currency_id,
-                Decimal(amount)
-            )
-
             # Check amount contains letters
             if amount.isalpha():
                 embed = discord.Embed(
@@ -52,8 +64,11 @@ class TransferCog(commands.Cog):
                 await interaction.response.send_message(embed=embed, ephemeral=True)
                 return
 
+            receiver_account = await AccountService.get_account(user.id, currency.currency_id)
+            total_balance = receiver_account.balance + Decimal(amount)
+
             # Check max and min amount
-            if not validate_decimal(Decimal(amount)):
+            if not validate_decimal(Decimal(total_balance)):
                 embed = discord.Embed(
                     title="Maximum or minimum range exceeded",
                     description="It shall be less than 999,999,999,999,999.99\n"
@@ -62,6 +77,14 @@ class TransferCog(commands.Cog):
                 )
                 await interaction.response.send_message(embed=embed, ephemeral=True)
                 return
+
+
+            transfer_result = await AccountService.transfer(
+                interaction.user.id,
+                user.id,
+                currency.currency_id,
+                Decimal(amount)
+            )
 
             if isinstance(transfer_result, Transaction):
                 embed = discord.Embed(
@@ -139,4 +162,4 @@ async def setup(bot: commands.Bot) -> None:
 
         # Syncing the slash commands (if needed)
         await bot.tree.sync()
-        print("Slash commands synced!")
+        print(datetime.datetime.now())

@@ -59,12 +59,13 @@ class ActiveTradeView(View):
         if self.page > self.total_pages:
             self.page = self.total_pages
 
-        # Fetch trades for the current page
+        # Fetch trades for the current page UNNECESSARY REMOVE THIS IN THE FUTURE
         trades = await TradeService.get_all_trades(
             discord_id=self.user.id,
             trade_type=self.trade_type,
             status=TradeStatus.OPEN,
-            page=self.page
+            page=self.page,
+            limit=10
         )
 
         # Prepare data for the table
