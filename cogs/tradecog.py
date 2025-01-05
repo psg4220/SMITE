@@ -26,6 +26,20 @@ class TradeCog(commands.Cog):
 
     group = app_commands.Group(name="trade", description="The trade command")
 
+    @group.command(name="help", description="Guide for trade commands")
+    async def help(self, interaction: discord.Interaction):
+        description = """
+        
+        **/trade limit <ticker pair>**
+        Places a trade to a ticker pair in limit order.
+        
+        The <ticker pair> should be like this for example:
+        **USD/EUR**
+        
+        This means you will trade `1 USD = ? EUR`
+        
+        """
+
     @group.command(name="limit", description="List your trade at the market")
     async def trade_limit(self, interaction: discord.Interaction, ticker_pair: str) -> None:
         await interaction.response.defer()

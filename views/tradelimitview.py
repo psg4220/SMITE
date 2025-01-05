@@ -74,6 +74,7 @@ class TradeLimitView(View):
             discord.SelectOption(label="2d", description="2 DAYS", value="172800"),
             discord.SelectOption(label="7d", description="7 DAYS", value="604800"),
             discord.SelectOption(label="30d", description="1 MONTH", value="2592000"),
+            discord.SelectOption(label="1y", description="1 YEAR", value="31558000")
 
         ]
     )
@@ -118,7 +119,7 @@ class TradeLimitView(View):
             message = await self.message  # Reference the original message containing this view.
             await message.edit(content="The trading view timed out!", view=self)
         except AttributeError:
-            print("Error in timeout")
+            pass
 
 
 async def display_trade_info(

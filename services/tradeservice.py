@@ -517,6 +517,7 @@ class TradeService:
                     trade_id = trade["trade_id"]
                     trade_amount = trade["amount"]
                     counterparty_id = trade["discord_id"]
+                    counterparty_price = trade["price_offered"]
 
                     # Fetch counterparty accounts
                     counterparty_base_account = await session.execute(
@@ -565,6 +566,9 @@ class TradeService:
                             counterparty_base_account.balance -= trade_amount
                             counterparty_quote_account.balance += trade_amount * trade["price_offered"]
 
+                        # Log the price
+                        await TradeLogService.create_trade_log(base_currency_id, quote_currency_id, counterparty_price)
+
                     else:
                         # Partially consume this trade
                         updates.append({
@@ -587,6 +591,9 @@ class TradeService:
 
                         remaining_amount = Decimal("0")
 
+                        # Log the price
+                        await TradeLogService.create_trade_log(base_currency_id, quote_currency_id, counterparty_price)
+
                 # Batch update trades in the database
                 for update_data in updates:
                     stmt = (
@@ -598,6 +605,7 @@ class TradeService:
                             updated_at=func.now()
                         )
                     )
+
                     await session.execute(stmt)
 
                 await session.commit()
