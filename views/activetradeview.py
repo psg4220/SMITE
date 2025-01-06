@@ -21,6 +21,7 @@ class ActiveTradeView(View):
         self.user = None
         self.trade_type = None
         self.message = None
+        self.filter = "user"
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         """
@@ -35,14 +36,11 @@ class ActiveTradeView(View):
 
     async def update_buttons(self):
         """
-        Updates the state of navigation buttons based on the current page.
+        Updates the navigation buttons based on the current page.
+        Disables the left button on the first page and the right button on the last page.
         """
-        for child in self.children:
-            if isinstance(child, Button):
-                if child.custom_id == "left_button":
-                    child.disabled = self.page == 1
-                elif child.custom_id == "right_button":
-                    child.disabled = self.page == self.total_pages
+        self.children[0].disabled = self.page == 1  # Disable the left button if on the first page
+        self.children[1].disabled = self.page == self.total_pages  # Disable the right button if on the last page
 
     async def trade_view(self, interaction: discord.Interaction):
         """
@@ -50,7 +48,7 @@ class ActiveTradeView(View):
         """
         # Get total pages for the user
         self.total_pages = await TradeService.get_total_pages(
-            discord_id=self.user.id,
+            discord_id=self.user.id if self.filter == "user" else None,
             trade_type=self.trade_type,
             status=TradeStatus.OPEN,
             limit=10
@@ -59,9 +57,10 @@ class ActiveTradeView(View):
         if self.page > self.total_pages:
             self.page = self.total_pages
 
+
         # Fetch trades for the current page UNNECESSARY REMOVE THIS IN THE FUTURE
         trades = await TradeService.get_all_trades(
-            discord_id=self.user.id,
+            discord_id=self.user.id if self.filter == "user" else None,
             trade_type=self.trade_type,
             status=TradeStatus.OPEN,
             page=self.page,
@@ -123,6 +122,23 @@ class ActiveTradeView(View):
         }.get(selected_trade_type, None)
         await interaction.response.defer()
         self.page = 1  # Reset to the first page
+        await self.trade_view(interaction)
+
+    @discord.ui.select(
+        placeholder="Filter",
+        options=[
+            discord.SelectOption(label="YOUR TRADES", description="Show only your trades", value="user"),
+            discord.SelectOption(label="ALL TRADES", description="Show all trades", value="all")
+        ]
+    )
+    async def select_filter(self, interaction: discord.Interaction, select: Select):
+        selected_filter = select.values[0]
+        if selected_filter == "user":
+            self.filter = "user"
+        else:
+            self.filter = "all"
+        await interaction.response.defer()
+        self.page = 1
         await self.trade_view(interaction)
 
     async def on_timeout(self):

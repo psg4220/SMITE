@@ -11,7 +11,7 @@ from modals.createcurrencymodal import CreateCurrencyModal
 from modals.mintmodal import MintModal
 from modals.burnmodal import BurnModal
 from models.trade import TradeStatus, TradeType
-from views.tradelimitview import TradeLimitView, display_trade_info
+from views.tradelimitview import TradeLimitView
 from views.tradelogview import TradeLogView
 from plotting.chartplotter import ChartPlotter
 from services.tradelogservice import TradeLogService
@@ -40,62 +40,9 @@ class TradeCog(commands.Cog):
         
         """
 
-    @group.command(name="limit", description="List your trade at the market")
-    async def trade_limit(self, interaction: discord.Interaction, ticker_pair: str) -> None:
-        await interaction.response.defer()
-        base_ticker, quote_ticker = ticker_pair.split("/")
-
-        # Check if it is the same tickers
-        if base_ticker.upper() == quote_ticker.upper():
-            embed = discord.Embed(
-                title="Same Ticker!",
-                description="You cannot put the same ticker",
-                color=0xff0000,
-            )
-            await interaction.followup.send(embed=embed, ephemeral=True)
-            return
-
-        # Retrieve base and quote currencies
-        base_currency = await CurrencyService.read_currency_by_ticker(base_ticker)
-        quote_currency = await CurrencyService.read_currency_by_ticker(quote_ticker)
-
-        # Check if base and quote is not empty
-        if not base_currency or not quote_currency:
-            embed = discord.Embed(
-                title="Invalid Ticker",
-                description="The ticker you have entered is invalid or it doesn't exist",
-                color=0xff0000,
-            )
-            await interaction.followup.send(embed=embed, ephemeral=True)
-            return
-
-        # Get the last trade log
-        last_trade_log = await TradeLogService.get_last_trade_log(
-            base_currency.currency_id, quote_currency.currency_id
-        )
-
-        # Check if there is a last trade log
-        if last_trade_log:
-            embed = await display_trade_info(last_trade_log, base_currency, quote_currency)
-            view = TradeLimitView(
-                bot=self.bot, embed=embed[0], base_currency=base_currency, quote_currency=quote_currency,
-                user=interaction.user, chart=embed[1]
-            )
-            await interaction.followup.send(embed=embed[0], view=view, file=embed[2])
-        else:
-            embed = await display_trade_info(
-                last_trade_log,
-                base_currency,
-                quote_currency
-            )
-            view = TradeLimitView(
-                bot=self.bot, base_currency=base_currency, quote_currency=quote_currency,
-                embed=embed, user=interaction.user
-            )
-            view.select_chart_type.disabled = True
-            view.select_timeframe.disabled = True
-            view.refresh_button.disabled = True
-            await interaction.followup.send(embed=embed, view=view, ephemeral=True)
+    @group.command(name="limit", description="Create a limit trade")
+    async def trade_limit(self, interaction: discord.Interaction, ticker_pair: str):
+        await TradeLimitView.display(bot=self.bot, interaction=interaction, ticker_pair=ticker_pair)
 
     @group.command(name="cancel", description="Cancel your trade")
     async def cancel_trade(self, interaction: discord.Interaction, trade_id: int) -> None:
