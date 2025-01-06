@@ -30,15 +30,57 @@ class TradeCog(commands.Cog):
     async def help(self, interaction: discord.Interaction):
         description = """
         
+        In trading we use trading pairs like:
+        
+        *USD/EUR*
+        *BTC/USD*
+        *...*
+        
+        The first currency is the base currency and
+        the second one is the quote currency.
+        (ex. USD/EUR | USD = Base, EUR = Quote)
+        
+        This simply means how many "quote" currency is equivalent
+        to one (1) "base" currency
+        
+        **Example:**
+        
+        *USD/EUR = 0.9 EUR* 
+        *1 USD = 0.9 EUR*
+        
+        If I buy USD/EUR and the amount is for example 2 units.
+        I will simply multiply
+        
+        `2 USD x 0.9 EUR = 1.8 EUR`
+        
+        **Therefore I will pay 1.8 EUR and receive 2 USD**
+        
+        If its **SELL** then I will receive **1.8 EUR** and pay **2 USD**
+        
+        **COMMNADS:**
+        
         **/trade limit <ticker pair>**
         Places a trade to a ticker pair in limit order.
         
         The <ticker pair> should be like this for example:
         **USD/EUR**
         
-        This means you will trade `1 USD = ? EUR`
+        **/trade cancel <trade number>
+        
+        Cancels your trade. Doesn't work for trades that is isn't yours.
+        
+        **/trade active <trade type (OPTIONAL)>** 
+        
+        Views Trades. It defaults to your trade but you can adjust the filters
+        in your liking.
         
         """
+        embed = discord.Embed(
+            title="GUIDE FOR TRADE COMMANDS",
+            description=description,
+            color=0x808080
+        )
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
     @group.command(name="limit", description="Create a limit trade")
     async def trade_limit(self, interaction: discord.Interaction, ticker_pair: str):
@@ -95,7 +137,7 @@ class TradeCog(commands.Cog):
     #         # button here
     #     await interaction.response.defer(ephemeral=True)
 
-    @group.command(name="active", description="View your active trades")
+    @group.command(name="active", description="View active trades")
     @app_commands.choices(trade_type=[
         app_commands.Choice(name="BUY", value=0),
         app_commands.Choice(name="SELL", value=1),
