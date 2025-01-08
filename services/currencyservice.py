@@ -27,7 +27,7 @@ class CurrencyService:
             return new_currency
 
     @staticmethod
-    async def read_currency_by_field(field: str, value):
+    async def read_currency_by_field(field: str, value) -> Currency | None:
         """
         Retrieves a currency based on a specified field and value from the database.
 
@@ -53,7 +53,7 @@ class CurrencyService:
             return currency
 
     @staticmethod
-    async def read_currency_by_id(currency_id: int):
+    async def read_currency_by_id(currency_id: int) -> Currency | None:
         """
         Retrieves a currency by its ID from the database.
 
@@ -66,7 +66,7 @@ class CurrencyService:
         return await CurrencyService.read_currency_by_field("currency_id", currency_id)
 
     @staticmethod
-    async def read_currency_by_name(name: str):
+    async def read_currency_by_name(name: str) -> Currency | None:
         """
         Retrieves a currency by its name from the database.
 
@@ -79,7 +79,7 @@ class CurrencyService:
         return await CurrencyService.read_currency_by_field("name", name)
 
     @staticmethod
-    async def read_currency_by_ticker(ticker: str):
+    async def read_currency_by_ticker(ticker: str) -> Currency | None:
         """
         Retrieves a currency by its ticker from the database.
 
@@ -92,7 +92,7 @@ class CurrencyService:
         return await CurrencyService.read_currency_by_field("ticker", ticker)
 
     @staticmethod
-    async def update_currency(currency_id: int, new_name: str, new_ticker: str):
+    async def update_currency(currency_id: int, new_name: str, new_ticker: str) -> Currency | None:
         """
         Updates an existing currency in the database by its ID.
 
@@ -109,7 +109,7 @@ class CurrencyService:
             currency = result.scalars().first()
             if currency:
                 currency.name = new_name
-                currency.ticker = new_ticker
+                currency.ticker = new_ticker.upper()
                 await session.commit()
                 return currency
             else:

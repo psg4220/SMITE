@@ -147,7 +147,7 @@ class TradeLimitView(View):
         chart = ChartPlotter(
             base_currency_id=base_currency.currency_id,
             quote_currency_id=quote_currency.currency_id,
-            time_period=timedelta(days=1),
+            time_period=timedelta(days=365),
         )
 
         image = await chart.generate_chart()

@@ -5,6 +5,7 @@ import time
 from discord import app_commands
 from discord.ext import commands
 from modals.createcurrencymodal import CreateCurrencyModal
+from modals.editcurrencymodal import EditCurrencyModal
 from modals.mintmodal import MintModal
 from modals.burnmodal import BurnModal
 from views.currencylistview import CurrencyListView
@@ -25,6 +26,9 @@ class CurrencyCog(commands.Cog):
         
         **NOTE:**
         **If you mistakenly created a currency and wanted to delete it please go to SMITE server and ask psg420.**
+        
+        **/currency edit**
+        Edits your currency's name and ticker. You must be an EXECUTIVE to do this action.
         
         **/currency mint**
         It produces new money into your account. You must be an EXECUTIVE or an ADMIN to do this action
@@ -55,6 +59,11 @@ class CurrencyCog(commands.Cog):
     @group.command(name="burn", description="Burns currency")
     async def burn_currency(self, interaction: discord.Interaction):
         modal = BurnModal(self.bot)
+        await interaction.response.send_modal(modal)
+
+    @group.command(name="edit", description="Edits the currency name and or ticker")
+    async def currency_edit(self, interaction: discord.Interaction):
+        modal = EditCurrencyModal(self.bot)
         await interaction.response.send_modal(modal)
 
     @group.command(name="list", description="List all the currencies")
