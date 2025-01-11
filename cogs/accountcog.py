@@ -15,13 +15,33 @@ class AccountCog(commands.Cog):
 
     group = app_commands.Group(name="account", description="The account command")
 
+    @group.command(name="help", description="Guide for accounts")
+    async def help(self, interaction: discord.Interaction):
+        description = """
+        COMMANDS:
+        
+        **/account create <ticker>**
+        Creates your account for a certain currency.
+        
+        **/account info <ticker>**
+        Shows the information about your account.
+        **THIS SHOWS YOUR BALANCE, ACCOUNT NUMBER, AND ROLE**
+         
+        """
+        embed = discord.Embed(
+            title="GUIDE FOR ACCOUNT COMMAND",
+            description=description,
+            color=0x808080
+        )
+        await interaction.response.send_message(embed=embed)
+
     @group.command(name="create", description="Creates your account for a certain currency")
     async def create_account(self, interaction: discord.Interaction) -> None:
         modal = CreateAccountModal(self.bot)
         await interaction.response.send_modal(modal)
 
     @group.command(name="info", description="Shows info of one of your accounts")
-    async def show_balance(self, interaction: discord.Interaction, ticker: str) -> None:
+    async def account_info(self, interaction: discord.Interaction, ticker: str) -> None:
         currency = await CurrencyService.read_currency_by_ticker(ticker.upper())
 
         if not currency:

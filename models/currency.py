@@ -15,6 +15,7 @@ class Currency(Base):
     # Define the back-reference for the relationship
     roles = relationship("Role", back_populates="currency")
     accounts = relationship("Account", back_populates="currency")
+    auth_list = relationship("BoatAuthList", back_populates="currency")
 
     def __repr__(self):
         return (
