@@ -78,12 +78,10 @@ class BoatConnectModal(discord.ui.Modal, title="Connect your modal"):
                 description="Make sure it is the right authorization token!",
                 color=0xff0000
             )
-            print(boat_token)
             await interaction.followup.send(embed=embed)
             return
 
         auth = await BoatAuthListService.set_token(guild_id=guild_id, currency_id=currency.currency_id, token=boat_token)
-        print(auth.boat_id)
         if auth:
             embed = discord.Embed(
                 title="CONNECTED",
