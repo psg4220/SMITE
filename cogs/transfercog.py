@@ -90,7 +90,7 @@ class TransferCog(commands.GroupCog, group_name="transfer"):
                 try:
                     embed = discord.Embed(
                         title="TRANSFER RECEIVED",
-                        description=f"You received **{transfer_result.amount} {ticker.upper()}** to **{user.name}**.\n"
+                        description=f"You received **{transfer_result.amount} {ticker.upper()}** to **{interaction.user.name}**.\n"
                                     f"Transaction Receipt: `{transfer_result.uuid}`",
                         color=0x00ff00
                     )
