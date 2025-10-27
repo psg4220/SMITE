@@ -1,4 +1,5 @@
 ## This repository is archived, Please use SMITE v1.1 
+## https://github.com/psg4220/SMITE-v1.1.git
 
 # SMITE (Society for Micronational Interbank Transactions and Exchanges)
 
